@@ -12,7 +12,8 @@ const seed = (i) => ((i * 9301 + 49297) % 233280) / 233280;
 
 function makeCards() {
   const cards = [];
-  for (let k = 0; k < 96; k++) {
+  const count = Math.max(1, +(localStorage.getItem('mock-count') || 96)); // `localStorage['mock-count']` : une très grosse collection pour les mesures
+  for (let k = 0; k < count; k++) {
     const a = ARTICLES[k % ARTICLES.length], round = Math.floor(k / ARTICLES.length);
     const r = round ? ['R', 'PC', 'C', 'C'][(k + round) % 4] : RAR[k % RAR.length];
     const n = round ? (k % 5 === 0 ? 2 : 1) : COPIES[k % COPIES.length];
@@ -195,6 +196,7 @@ export async function auth(kind, body) {
 // Temps réel factice : un message arrive peu après l'ouverture.
 export function events(onState, onEvent) {
   onState('live');
-  const t = setTimeout(() => onEvent({ event: 'message', data: { from: 'Camille' } }), 8000);
+  const quiet = localStorage.getItem('mock-quiet') === '1'; // captures d'écran : pas de notification surprise
+  const t = quiet ? 0 : setTimeout(() => onEvent({ event: 'message', data: { from: 'Camille' } }), 8000);
   return { close: () => clearTimeout(t) };
 }

@@ -1,0 +1,16 @@
+# docker compose up -d --build   (puis configure ton HTTPS : voir docs/SELF-HOSTING.md)
+services:
+  altwikipick:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"   # seulement en local : c'est ton reverse proxy (Caddy, nginx…) qui reçoit Internet
+    env_file: .env
+    volumes:
+      - altwp-data:/data
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+volumes:
+  altwp-data:

@@ -16,7 +16,7 @@ Le site est en français, en bêta. Base : `https://wiki-pick.com`.
 - ✅ Aucune trace de CSRF, d'en-tête `Authorization` ni de `Bearer` dans `core.js` (0 occurrence). Une occurrence de `credentials` et une de `localStorage.getItem`.
 - **Conclusion (inférée)** : l'auth est un **cookie de session** posé par le site. Le client doit renvoyer ce cookie (`requests.Session`).
 - Connexion possible par e-mail/mot de passe (`/api/login`) et par OAuth : `state.info.oauth` liste 2 fournisseurs, `oauthNoms` connaît `google`, `discord`, `facebook`, `x`.
-- ❓ **Payload de `/api/login` non lu** : le filtre de sécurité de l'outil d'exploration a bloqué la lecture de ce passage. Deux façons de l'obtenir : `curl https://wiki-pick.com/js/social.js` puis chercher `/api/login`, ou faire un HAR d'une connexion (voir « Comment continuer l'exploration »). Le projet contourne le besoin : il utilise la vraie page de login dans une fenêtre et récupère le cookie.
+- ✅ **`POST /api/login`** `{login, password, defi, rep}` : `login` = pseudo ou e-mail ; `defi` et `rep` = la réponse à la question « es-tu un robot ? » (`GET /api/defi`, même mécanisme que pour les paquets). Lu dans `social.js` (`authMode === "login"`), utilisé par la version web (`WikiPickClient.login`) ; la réponse pose les cookies de session. Le bureau, lui, passe par la vraie page du site. Les messages d'erreur sont en français dans `{error}`.
 - Le login sert à obtenir un cookie ; ensuite `GET /api/state` répond avec `me` rempli si connecté. Test de session valide utilisé dans le code : `state.me` est un dict avec un `id` truthy.
 - Le cookie de session est peut-être lié au User-Agent : le client reprend le `navigator.userAgent` de la fenêtre de login (non confirmé nécessaire).
 

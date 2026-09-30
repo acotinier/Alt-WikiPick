@@ -1,0 +1,8 @@
+# Exemple : HTTPS automatique (Let's Encrypt) devant Alt-WikiPick. Remplace le nom de domaine par le tien,
+# et mets ALTWP_TRUST_PROXY=1 dans ton .env.
+altwiki-pick.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8000 {
+		flush_interval -1   # le flux temps réel (SSE) part tout de suite, sans mise en mémoire tampon
+	}
+}

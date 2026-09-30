@@ -4,6 +4,7 @@ Vérifie les parcours, la mise en page mobile (aucun débordement à 320 et 390 
 import functools
 import http.server
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -64,18 +65,20 @@ with sync_playwright() as p:
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "pas de débordement horizontal"
 
     # ---- collection : dessinée par paquets, recherche, raretés, fiche
-    pg.wait_for_selector(".grid .card"); pg.wait_for_timeout(400)
-    assert pg.locator(".grid .card").count() == 60, "60 cartes d'abord"
-    pg.evaluate("window.scrollTo(0, document.body.scrollHeight)"); pg.wait_for_timeout(700)
-    assert pg.locator(".grid .card").count() == 96, "le reste arrive au défilement"
+    pg.wait_for_selector(".g .card"); pg.wait_for_timeout(400)
+    shown = pg.locator(".g .card").count()
+    assert 6 <= shown < 40, "défilement virtuel : seules les cartes visibles existent dans la page"
+    pg.evaluate("window.scrollTo(0, document.body.scrollHeight)"); pg.wait_for_timeout(500)
+    last = pg.locator(".g .card").last.bounding_box()
+    assert pg.locator(".g .card").count() < 40 and last and 0 <= last["y"] < 844, "au bas de la liste, les dernières cartes sont bien là"
     pg.evaluate("window.scrollTo(0, 0)")
     pg.fill("input[type=search]", "joconde"); pg.wait_for_timeout(500)
-    n = pg.locator(".grid .card").count(); assert 0 < n < 10 and "Joconde" in pg.inner_text(".grid")
+    n = pg.locator(".g .card").count(); assert 0 < n < 10 and "Joconde" in pg.inner_text(".g")
     pg.fill("input[type=search]", ""); pg.wait_for_timeout(400)
     pg.locator(".chip").first.click(); pg.wait_for_timeout(200)
-    assert 0 < pg.locator(".grid .card").count() < 96 and "Légendaire" in pg.locator(".chip.on").inner_text()
+    assert 0 < pg.locator(".g .card").count() < 96 and "Légendaire" in pg.locator(".chip.on").inner_text()
     pg.locator(".chip").first.click()
-    pg.locator(".grid .card", has_text="La Joconde").first.click(); pg.wait_for_selector("[role=dialog] .extract")
+    pg.locator(".g .card", has_text="La Joconde").first.click(); pg.wait_for_selector("[role=dialog] .extract")
     sheet = pg.inner_text("[role=dialog]")
     assert "Tes exemplaires" in sheet and "Achetée 250 Wikiki aux enchères à Bob" in sheet and "Lire la suite" in sheet and "Chez tes amis : Camille, Inès" in sheet
     pg.screenshot(path=str(out / "card-sheet.png"))
@@ -90,7 +93,7 @@ with sync_playwright() as p:
     # ---- aucune injection HTML : un nom de carte reste du texte
     pg.evaluate("window.__mock.cards[1].name = '<img src=x onerror=\"window.__pwn=1\">Piégée'")
     pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(900)
-    assert "<img src=x" in pg.inner_text(".grid") and pg.evaluate("window.__pwn") is None and pg.locator(".grid img[src=x]").count() == 0
+    assert "<img src=x" in pg.inner_text(".g") and pg.evaluate("window.__pwn") is None and pg.locator(".g img[src=x]").count() == 0
 
     # ---- paquets : un clic = un paquet ; la vérification du site est posée au joueur, jamais devinée
     pg.click(".tabbar button >> nth=1"); pg.wait_for_selector(".idle")
@@ -104,6 +107,7 @@ with sync_playwright() as p:
     pg.evaluate("window.__mock.defi = true; window.__calls = []")
     pg.click("text=Ouvrir un paquet"); pg.wait_for_selector("[role=dialog] .defi"); pg.click("[role=dialog] .c >> nth=1"); pg.wait_for_selector(".reveal", timeout=6000)
     assert calls(pg, "open_pack")[-1][1:] == ["mockchallenge1", 1] and pg.locator(".pcard").count() == 5 and pg.locator(".pcard.open").count() == 0
+    assert pg.evaluate("[...document.querySelectorAll('.pcard')].every((e) => getComputedStyle(e).clipPath === 'none')"), "aucune carte n'est découpée (la forme du paquet ne déborde pas sur elles)"
     pg.locator(".pcard").first.click(); pg.wait_for_timeout(300); assert pg.locator(".pcard.open").count() == 1
     pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=6000)
     assert "Paquet ouvert : 5 cartes, dont 3 nouvelles" in pg.inner_text(".end") and len(calls(pg, "pack_seen")) == 1
@@ -160,6 +164,16 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / "desktop.png"))
     pg.keyboard.press("2"); pg.wait_for_timeout(300); assert pg.evaluate("location.hash") == "#/packs", "raccourci clavier : 2 = Paquets"
     assert not errs, errs
+
+    # ---- une très grosse collection (3 904 cartes, comme un vrai joueur) : la page reste légère
+    ctx = b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    ctx.add_init_script("localStorage.setItem('mock-logged','1'); localStorage.setItem('mock-count','3904')")
+    big = ctx.new_page(); big.goto(URL); big.wait_for_selector(".g .card")
+    big.evaluate("window.scrollTo(0, document.body.scrollHeight)"); big.wait_for_timeout(600)
+    nodes = big.evaluate("document.getElementsByTagName('*').length")
+    assert big.locator(".g .card").count() < 40 and nodes < 4000, ("trop d'éléments pour 3 904 cartes", nodes)
+    assert "3 904 cartes" in re.sub(r"\s", " ", big.inner_text(".count"))  # espaces insécables compris
+    ctx.close()
 
     # ---- déconnexion
     pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Se déconnecter").click(); pg.locator("[role=dialog] button.armed").click(); pg.wait_for_selector("input[type=password]")

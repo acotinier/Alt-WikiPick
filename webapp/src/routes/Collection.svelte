@@ -1,5 +1,5 @@
 <script>
-  // La collection : recherche, raretés, tri, doublons. Dessinée par paquets de 60 au fil du défilement ; hors écran, le navigateur ne dessine rien.
+  // La collection : recherche, raretés, tri, doublons. Défilement virtuel : seules les cartes visibles existent dans la page.
   import { call } from '../lib/api.js';
   import { debounce, fmt, plural, rarityRank, color } from '../lib/format.js';
   import { app, coll, openCard } from '../lib/store.svelte.js';
@@ -7,9 +7,9 @@
   import Empty from '../ui/Empty.svelte';
   import Icon from '../ui/Icon.svelte';
   import Sheet from '../ui/Sheet.svelte';
+  import VirtualGrid from '../ui/VirtualGrid.svelte';
 
-  const PAGE = 60;
-  let q = $state(''), typed = $state(''), sort = $state('rarity'), tag = $state(''), dups = $state(false), rars = $state([]), filters = $state(false), shown = $state(PAGE);
+  let q = $state(''), typed = $state(''), sort = $state('rarity'), tag = $state(''), dups = $state(false), rars = $state([]), filters = $state(false);
   const setQ = debounce((v) => (q = v.trim().toLowerCase()), 160);
 
   call('prefs_get').then((r) => { if (r && r.ok && ['rarity', 'reads', 'name', 'copies'].includes(r.prefs.collection_sort)) sort = r.prefs.collection_sort; });
@@ -27,18 +27,8 @@
       && (!tag || (c.tags || []).map(String).includes(tag)) && (!dups || c.copies > 1));
     return out.sort(SORTS[sort]);
   });
-  $effect(() => { list; shown = PAGE; }); // un autre filtre : on repart du haut de la liste
-
   const toggle = (r) => (rars = rars.includes(r) ? rars.filter((x) => x !== r) : [...rars, r]);
   const active = $derived((tag ? 1 : 0) + (dups ? 1 : 0) + (sort !== 'rarity' ? 1 : 0));
-
-  let sentinel = $state(null);
-  $effect(() => {
-    if (!sentinel) return;
-    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) shown += PAGE; }, { rootMargin: '700px' });
-    io.observe(sentinel);
-    return () => io.disconnect();
-  });
 </script>
 
 <div class="bar">
@@ -52,20 +42,17 @@
   {/each}
 </div>
 
-<p class="count muted">{coll.loaded ? plural(list.length, 'carte') : 'Chargement…'}{#if coll.loading && coll.loaded}<Icon name="refresh" />{/if}</p>
+<p class="count muted">{coll.loaded ? `${fmt(list.length)} carte${list.length > 1 ? 's' : ''}` : 'Chargement…'}{#if coll.loading && coll.loaded}<Icon name="refresh" />{/if}</p>
 
-<div class="grid">
-  {#if !coll.loaded}
-    {#each Array(12) as _}<div class="skeleton sk"></div>{/each}
-  {:else if !list.length}
-    <Empty title="Aucune carte" text={coll.cards.length ? 'Aucune carte ne correspond à ces filtres.' : 'Ouvre quelques paquets pour commencer ta collection.'} />
-  {:else}
-    {#each list.slice(0, shown) as c (c.cid + (c.shiny ? '*' : ''))}
-      <Card card={c} onclick={() => openCard(c)} />
-    {/each}
-  {/if}
-</div>
-{#if shown < list.length}<div bind:this={sentinel} class="sentinel"></div>{/if}
+{#if !coll.loaded}
+  <div class="grid">{#each Array(12) as _}<div class="skeleton sk"></div>{/each}</div>
+{:else if !list.length}
+  <div class="grid"><Empty title="Aucune carte" text={coll.cards.length ? 'Aucune carte ne correspond à ces filtres.' : 'Ouvre quelques paquets pour commencer ta collection.'} /></div>
+{:else}
+  <VirtualGrid items={list} key={(c) => c.cid + (c.shiny ? '*' : '')} resetKey={`${q}|${sort}|${tag}|${dups}|${rars.join()}`}>
+    {#snippet item(c)}<Card card={c} onclick={() => openCard(c)} />{/snippet}
+  </VirtualGrid>
+{/if}
 
 <Sheet open={filters} onclose={() => (filters = false)} title="Filtres et tri">
   <div class="form">
@@ -98,7 +85,6 @@
   .count { display: flex; align-items: center; gap: 8px; margin: 12px 2px 12px; font-size: 13px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
   .sk { aspect-ratio: 5 / 7; border-radius: 13px; }
-  .sentinel { height: 1px; }
   .form { display: grid; gap: 16px; padding-top: 6px; }
   .form label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   .check { display: flex !important; align-items: center; gap: 10px; color: var(--text) !important; font-size: 15px !important; }

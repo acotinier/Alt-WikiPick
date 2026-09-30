@@ -19,3 +19,5 @@ webapp/dist/
 webapp/dist-mock/
 data/
 .env
+.idea/
+.vscode/

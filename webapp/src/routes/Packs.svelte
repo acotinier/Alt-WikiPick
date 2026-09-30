@@ -46,12 +46,13 @@
     app.me = r.me; app.meAt = Date.now();
     cards = [...r.cards].sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity) || Number(a.shiny) - Number(b.shiny)); // la meilleure pour la fin
     flipped = []; phase = 'reveal'; opening = false;
+    scrollTo({ top: 0 }); // sur téléphone la page peut être plus bas : la révélation commence en haut
     call('pack_seen'); // « les cartes sont à l'écran », comme le fait le site
     if (history) loadHistory();
   }
   const flip = (i) => { if (!flipped.includes(i)) flipped = [...flipped, i]; else openCard(cards[i]); };
   async function flipAll() { for (let i = 0; i < cards.length; i++) if (!flipped.includes(i)) { flipped = [...flipped, i]; await sleep(reduced ? 0 : 220); } }
-  const done = (again) => { phase = 'idle'; collectionChanged(); refreshMe(); if (again) open(); };
+  const done = (again) => { phase = 'idle'; scrollTo({ top: 0 }); collectionChanged(); refreshMe(); if (again) open(); };
   const finished = $derived(phase === 'reveal' && flipped.length >= cards.length);
   const best = $derived(cards[cards.length - 1]);
 
@@ -71,8 +72,8 @@
   <section class="idle">
     <div class="pack-wrap" class:empty={n < 1} class:tearing={phase === 'tearing'} data-n={Math.min(n, 3)}>
       <div class="pk under u2"><div class="art"></div></div><div class="pk under u1"><div class="art"></div></div>
-      <div class="pk main"><div class="shape top"><div class="art"></div></div>
-        <div class="shape body"><div class="art"><span class="logo serif">Wiki<span>·</span>Pick</span><span class="sub">5 articles au hasard</span></div></div><div class="flash"></div></div>
+      <div class="pk main"><div class="shape ptop"><div class="art"></div></div>
+        <div class="shape pbody"><div class="art"><span class="logo serif">Wiki<span>·</span>Pick</span><span class="sub">5 articles au hasard</span></div></div><div class="flash"></div></div>
     </div>
     <h2 class="count serif">{n < 1 ? 'Aucun paquet en réserve' : plural(n, 'paquet') + ' en réserve'}</h2>
     <p class="next muted num">{left == null ? '' : full ? 'Réserve pleine' : `Prochain paquet dans ${clock(left)}`}</p>
@@ -134,18 +135,18 @@
   .pack-wrap[data-n="0"] .under, .pack-wrap[data-n="1"] .under, .pack-wrap[data-n="2"] .u2 { display: none; }
   .pack-wrap.empty .main { filter: grayscale(.8) brightness(.5) drop-shadow(0 26px 28px rgba(0, 0, 0, .55)); }
   .shape { position: absolute; inset: 0; }
-  .top { clip-path: polygon(0 0, 100% 0, 100% 13%, 90% 16%, 80% 13%, 70% 16%, 60% 13%, 50% 16%, 40% 13%, 30% 16%, 20% 13%, 10% 16%, 0 13%); transform-origin: 0 100%; }
-  .body { clip-path: polygon(0 13%, 10% 16%, 20% 13%, 30% 16%, 40% 13%, 50% 16%, 60% 13%, 70% 16%, 80% 13%, 90% 16%, 100% 13%, 100% 100%, 0 100%); }
+  .ptop { clip-path: polygon(0 0, 100% 0, 100% 13%, 90% 16%, 80% 13%, 70% 16%, 60% 13%, 50% 16%, 40% 13%, 30% 16%, 20% 13%, 10% 16%, 0 13%); transform-origin: 0 100%; }
+  .pbody { clip-path: polygon(0 13%, 10% 16%, 20% 13%, 30% 16%, 40% 13%, 50% 16%, 60% 13%, 70% 16%, 80% 13%, 90% 16%, 100% 13%, 100% 100%, 0 100%); }
   .art { position: absolute; inset: 0; border-radius: 10px; overflow: hidden; background:
     repeating-linear-gradient(90deg, rgba(255, 255, 255, .18) 0 2px, transparent 2px 6px) top / 100% 3% no-repeat, repeating-linear-gradient(90deg, rgba(255, 255, 255, .18) 0 2px, transparent 2px 6px) bottom / 100% 3% no-repeat,
     radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, .14), transparent 60%), linear-gradient(165deg, #15264a 0%, #1f4178 46%, #0e5a6e 100%); }
   .art::after { content: ""; position: absolute; inset: 0; mix-blend-mode: color-dodge; opacity: .5; background: linear-gradient(115deg, transparent 12%, rgba(255, 90, 200, .42) 30%, rgba(90, 220, 255, .48) 48%, rgba(255, 235, 120, .42) 66%, transparent 84%); }
-  .body .art::before { content: ""; position: absolute; inset: 20% 9% 9%; border: 1px solid rgba(255, 255, 255, .28); border-radius: 6px; }
+  .pbody .art::before { content: ""; position: absolute; inset: 20% 9% 9%; border: 1px solid rgba(255, 255, 255, .28); border-radius: 6px; }
   .logo { position: absolute; left: 0; right: 0; top: 37%; text-align: center; font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -.02em; color: #f7f2e6; text-shadow: 0 2px 16px rgba(0, 0, 0, .5); }
   .logo span { color: var(--gold); }
   .sub { position: absolute; left: 0; right: 0; bottom: 15%; text-align: center; font: 600 12px var(--sans); letter-spacing: .16em; font-variant-caps: all-small-caps; color: rgba(255, 255, 255, .7); }
   .flash { position: absolute; left: -30%; right: -30%; top: 2%; height: 26%; opacity: 0; filter: blur(4px); background: radial-gradient(ellipse at center, rgba(255, 255, 255, .95), rgba(160, 220, 255, .4) 40%, transparent 70%); }
-  .tearing .top { animation: tear-top .8s cubic-bezier(.3, .6, .2, 1) forwards; } .tearing .body { animation: tear-body .9s ease forwards; } .tearing .flash { animation: flash .9s .12s ease-out forwards; }
+  .tearing .ptop { animation: tear-top .8s cubic-bezier(.3, .6, .2, 1) forwards; } .tearing .pbody { animation: tear-body .9s ease forwards; } .tearing .flash { animation: flash .9s .12s ease-out forwards; }
   @keyframes tear-top { 25% { transform: translate(0, -6px) rotate(-2deg); } 100% { transform: translate(26px, -120px) rotate(-16deg); opacity: 0; } }
   @keyframes tear-body { 15% { transform: translateX(-4px); } 30% { transform: translateX(4px); } 45% { transform: translateX(-3px); } 60% { transform: scale(1.03); } 100% { transform: translateY(30px) scale(.9); opacity: 0; } }
   @keyframes flash { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1.6); } }
