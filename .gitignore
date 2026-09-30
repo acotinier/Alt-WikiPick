@@ -1,0 +1,14 @@
+# environnement et artefacts de build
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+dist/
+*.spec
+
+# jamais dans le dépôt : accès au compte, données locales, notes de travail
+session.json
+*.log
+backup/
+.claude/
+CLAUDE.md

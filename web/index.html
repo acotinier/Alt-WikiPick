@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wiki-Pick Desktop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- icônes (contenu statique) -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-pack" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M6 7h12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 8h12l-3-3M17 16H5l3 3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></symbol>
+  <symbol id="i-exit" viewBox="0 0 24 24"><path d="M15 4h3a1 1 0 011 1v14a1 1 0 01-1 1h-3M10 8l-4 4 4 4M6 12h10"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-dense" viewBox="0 0 24 24"><rect x="3" y="3" width="4.5" height="4.5"/><rect x="9.75" y="3" width="4.5" height="4.5"/><rect x="16.5" y="3" width="4.5" height="4.5"/><rect x="3" y="9.75" width="4.5" height="4.5"/><rect x="9.75" y="9.75" width="4.5" height="4.5"/><rect x="16.5" y="9.75" width="4.5" height="4.5"/><rect x="3" y="16.5" width="4.5" height="4.5"/><rect x="9.75" y="16.5" width="4.5" height="4.5"/><rect x="16.5" y="16.5" width="4.5" height="4.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1112 0v5l1.5 2h-15z"/><path d="M10 21a2 2 0 004 0"/></symbol>
+  <symbol id="i-cards" viewBox="0 0 24 24"><rect x="8" y="3" width="12" height="16" rx="1.6"/><path d="M5 6.5v12A2.5 2.5 0 007.5 21H15"/></symbol>
+  <symbol id="i-gavel" viewBox="0 0 24 24"><path d="M14.5 12.5l-8 8a2.12 2.12 0 01-3-3l8-8M16 16l6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/></symbol>
+  <symbol id="i-sword" viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M8.5 20h7M10 17h4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18 14.2a6.5 6.5 0 013.5 5.8"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8S10.5 3 8 3.5 7 8 12 8zM12 8s1.5-5 4-4.5S17 8 12 8z"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 6 5 11a5 5 0 01-10 0c0-2.5 1.5-4 2.5-5 .5 2 1.5 3 2.5 3 0-3-1-6 0-9z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<!-- ============ Connexion ============ -->
+<main id="login" class="screen hidden">
+  <div class="login-art" aria-hidden="true">
+    <div class="fan">
+      <i class="cardback f1"><span>W·P</span></i>
+      <i class="cardback f2"><span>W·P</span></i>
+      <i class="cardback f3"><span>W·P</span></i>
+    </div>
+  </div>
+  <div class="login">
+    <p class="eyebrow">L'encyclopédie, à collectionner</p>
+    <h1 class="wordmark">Wiki<span>·</span>Pick</h1>
+    <p class="lead">Ta collection de cartes Wikipédia, sur ton bureau. Une fenêtre wiki-pick.com s'ouvre : connecte-toi comme d'habitude (mot de passe, Google, Discord…), l'appli récupère la session toute seule.</p>
+    <button id="btn-login" class="btn primary big">Se connecter sur wiki-pick.com</button>
+    <p id="login-msg" class="msg" role="status"></p>
+    <details class="advanced">
+      <summary>Ça ne marche pas ? Méthode manuelle</summary>
+      <p>Dans Chrome, sur wiki-pick.com (connecté) : F12, Réseau, clique une requête <code>/api/…</code>, En-têtes, copie la valeur de <code>Cookie</code> et colle-la ici.</p>
+      <textarea id="cookie-text" rows="3" placeholder="nom=valeur; autre=valeur"></textarea>
+      <button id="btn-cookie" class="btn">Utiliser ces cookies</button>
+    </details>
+    <p class="fineprint">Ton mot de passe ne passe jamais par cette appli. La session est enregistrée uniquement sur ton ordinateur et effacée à la déconnexion.</p>
+  </div>
+</main>
+
+<!-- ============ Application ============ -->
+<div id="app" class="screen hidden">
+  <aside class="rail">
+    <div class="brand"><span class="mono" aria-hidden="true">W</span><h1 class="wordmark">Wiki<span>·</span>Pick</h1></div>
+    <nav class="tabs" aria-label="Sections">
+      <p class="rail-sec">Jeu</p>
+      <button class="tab active" data-tab="collection" title="Collection (1)"><svg class="i"><use href="#i-cards"/></svg><span class="tl">Collection</span></button>
+      <button class="tab" data-tab="packs" title="Paquets (2)"><svg class="i"><use href="#i-pack"/></svg><span class="tl">Paquets</span></button>
+      <button class="tab" data-tab="market" title="Marché (3)"><svg class="i"><use href="#i-gavel"/></svg><span class="tl">Marché</span></button>
+      <button class="tab" data-tab="trades" title="Échanges (4)"><svg class="i"><use href="#i-swap"/></svg><span class="tl">Échanges</span><b id="tab-trades-n" class="tabn hidden"></b></button>
+      <button class="tab" data-tab="arena" title="Arène"><svg class="i"><use href="#i-sword"/></svg><span class="tl">Arène</span><b id="tab-arena-dot" class="tabn dot hidden">!</b></button>
+      <p class="rail-sec">Communauté</p>
+      <button class="tab" data-tab="messages" title="Messages (7)"><svg class="i"><use href="#i-chat"/></svg><span class="tl">Messages</span><b id="tab-messages-n" class="tabn hidden"></b></button>
+      <button class="tab" data-tab="friends" title="Amis (8)"><svg class="i"><use href="#i-users"/></svg><span class="tl">Amis</span><b id="tab-friends-n" class="tabn hidden"></b></button>
+      <button class="tab" data-tab="guild" title="Guilde (9)"><svg class="i"><use href="#i-shield"/></svg><span class="tl">Guilde</span><b id="tab-guild-dot" class="tabn dot hidden">•</b></button>
+      <p class="rail-sec">Toi</p>
+      <button class="tab" data-tab="profile" title="Profil"><svg class="i"><use href="#i-user"/></svg><span class="tl">Profil</span></button>
+      <button class="tab" data-tab="rewards" title="Récompenses"><svg class="i"><use href="#i-gift"/></svg><span class="tl">Récompenses</span><b id="tab-rewards-dot" class="tabn gold hidden">!</b></button>
+      <button class="tab" data-tab="rank" title="Classement (5)"><svg class="i"><use href="#i-trophy"/></svg><span class="tl">Classement</span></button>
+      <button class="tab" data-tab="stats" title="Statistiques (6)"><svg class="i"><use href="#i-chart"/></svg><span class="tl">Statistiques</span></button>
+    </nav>
+    <div class="rail-foot">
+      <button class="quick-hint" id="btn-quick2" title="Recherche rapide (Ctrl K)"><svg class="i"><use href="#i-search"/></svg><span class="tl">Rechercher</span><kbd>Ctrl K</kbd></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h2 id="page-title" class="ptitle">Collection</h2>
+      <div class="me">
+        <span id="live" class="live hidden" role="status" title="Connexion au flux temps réel de wiki-pick.com"><i></i><span id="live-t"></span></span>
+        <span id="sync" class="sync hidden" role="status"></span>
+        <div class="wallet">
+          <span class="stat" title="Pièces"><svg class="i"><use href="#i-coin"/></svg><b id="me-coins"></b></span>
+          <span class="stat" title="Paquets en réserve"><svg class="i"><use href="#i-pack"/></svg><b id="me-packs"></b></span>
+          <span id="me-timer" class="stat timer hidden" title="Prochain paquet dans"><svg class="i"><use href="#i-clock"/></svg><b id="me-timer-t"></b></span>
+        </div>
+        <span class="bellwrap">
+          <button id="btn-bell" class="icon-btn" title="Notifications" aria-label="Notifications" aria-haspopup="true"><svg class="i"><use href="#i-bell"/></svg></button>
+          <b id="bell-n" class="badge hidden"></b>
+        </span>
+        <span class="userwrap">
+          <button id="btn-user" class="userbtn" aria-haspopup="true" aria-expanded="false">
+            <span id="me-initial" class="avatar initial hidden" aria-hidden="true"></span>
+            <img id="me-avatar" class="avatar hidden" alt="" referrerpolicy="no-referrer">
+            <span id="me-name" class="name"></span>
+            <svg class="i chev"><use href="#i-chev"/></svg>
+          </button>
+          <div id="user-menu" class="menu hidden" role="menu">
+            <button id="btn-quick" role="menuitem"><svg class="i"><use href="#i-search"/></svg>Recherche rapide<kbd>Ctrl K</kbd></button>
+            <button id="btn-sound" role="menuitem"><svg class="i"><use href="#i-sound"/></svg><span id="sound-t">Sons : désactivés</span></button>
+            <button id="btn-export" role="menuitem"><svg class="i"><use href="#i-out"/></svg>Exporter la collection (CSV)</button>
+            <hr>
+            <button id="btn-corb" role="menuitem"><svg class="i"><use href="#i-trash"/></svg>Corbeille (recyclées récemment)</button>
+            <button id="btn-actlog" role="menuitem"><svg class="i"><use href="#i-list"/></svg>Journal des actions</button>
+            <hr>
+            <button id="btn-refresh" role="menuitem"><svg class="i"><use href="#i-refresh"/></svg>Actualiser depuis le site</button>
+            <button id="btn-site" role="menuitem"><svg class="i"><use href="#i-out"/></svg>Ouvrir wiki-pick.com</button>
+            <hr>
+            <button id="btn-logout" role="menuitem" class="danger"><svg class="i"><use href="#i-exit"/></svg>Se déconnecter</button>
+          </div>
+        </span>
+      </div>
+    </header>
+    <div id="cb-invite" class="cbinvite hidden" role="alert"></div>
+
+    <div id="watch-panel" class="panel hidden" role="dialog" aria-label="Cartes surveillées">
+      <div class="panel-head"><h2>Cartes surveillées</h2></div>
+      <p class="panel-note">Tu es prévenu dès qu'une de ces cartes est mise aux enchères, tant que l'appli est ouverte. La liste reste sur cet ordinateur.</p>
+      <div id="watch-list" class="nlist"></div>
+    </div>
+
+    <div id="bell-panel" class="panel hidden" role="dialog" aria-label="Notifications">
+      <div class="panel-head"><h2>Notifications</h2><button id="btn-read-all" class="btn small ghost">Tout marquer comme lu</button></div>
+      <div id="bell-list" class="nlist"></div>
+      <p id="bell-foot" class="panel-foot"></p>
+    </div>
+
+    <section id="tab-collection" class="tabpane">
+      <div class="toolbar">
+        <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="f-search" type="search" placeholder="Rechercher une carte" autocomplete="off"></label>
+        <select id="f-sort" aria-label="Trier">
+          <option value="rarity">Trier par rareté</option>
+          <option value="reads">Trier par lectures</option>
+          <option value="name">Trier par nom</option>
+          <option value="copies">Trier par exemplaires</option>
+        </select>
+        <select id="f-tag" aria-label="Filtrer par tag"><option value="">Tous les tags</option></select>
+        <label class="check"><input id="f-dups" type="checkbox"> Doublons seulement</label>
+        <span id="f-count" class="count"></span>
+      </div>
+      <div id="f-rarities" class="rarities"></div>
+      <div id="grid" class="grid"></div>
+      <div id="sentinel"></div>
+    </section>
+
+    <section id="tab-packs" class="tabpane hidden">
+      <div id="packs-idle" class="pk-idle">
+        <div id="pack-wrap" class="pack-wrap" data-n="0">
+          <div class="pack under u2"><div class="art"></div></div>
+          <div class="pack under u1"><div class="art"></div></div>
+          <div id="pack" class="pack" role="button" tabindex="0" aria-label="Ouvrir un paquet">
+            <div class="shape top"><div class="art"></div></div>
+            <div class="shape body"><div class="art"><span class="pk-logo">Wiki<span>·</span>Pick</span><span class="pk-sub">5 articles au hasard</span></div></div>
+            <div class="flash"></div>
+          </div>
+          <div class="pack-shadow" aria-hidden="true"></div>
+        </div>
+        <h2 id="pk-count" class="pk-count"></h2>
+        <p id="pk-next" class="pk-next"></p>
+        <div class="pk-actions">
+          <button id="btn-open" class="btn primary big">Ouvrir un paquet</button>
+          <button id="btn-gold" class="btn gold big hidden"></button>
+        </div>
+      </div>
+
+      <div id="reveal" class="reveal hidden">
+        <div id="pk-cards" class="pcards"></div>
+        <div class="pk-bar">
+          <div class="pk-track"><i id="pk-fill"></i></div>
+          <span id="pk-progress"></span>
+          <button id="btn-flip-all" class="btn small">Tout retourner</button>
+        </div>
+        <div id="pk-end" class="pk-end hidden">
+          <p id="pk-summary"></p>
+          <div class="row">
+            <button id="btn-done" class="btn">Terminer</button>
+            <button id="btn-again" class="btn primary">Ouvrir un autre paquet</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pk-journal" class="journal hidden" aria-label="Journal des paquets">
+        <h2 class="sec">Tes derniers paquets</h2>
+        <p id="pj-sum" class="note"></p>
+        <div id="pj-luck" class="luck"></div>
+        <div id="pj-list" class="pj-list"></div>
+        <div class="more"><button id="pj-more" class="btn small hidden">Voir plus de paquets</button></div>
+      </div>
+    </section>
+
+    <section id="tab-market" class="tabpane wide hidden">
+      <div class="toolbar">
+        <div id="m-scopes" class="seg" role="group" aria-label="Quelles enchères">
+          <button class="on" data-scope="live">Toutes</button>
+          <button data-scope="mine">En vente</button>
+          <button data-scope="bidding">Mes mises</button>
+          <button data-scope="purchases">Achetées</button>
+          <button data-scope="ventes">Vendues</button>
+        </div>
+        <span id="m-count" class="count"></span>
+        <button id="m-watch" class="btn small" title="Cartes dont tu veux être prévenu quand elles passent aux enchères"><svg class="i"><use href="#i-eye"/></svg>Surveillées<b id="m-watch-n" class="tabn hidden"></b></button>
+        <div id="m-views" class="seg" role="group" aria-label="Affichage">
+          <button class="on" data-view="grid" title="Grande grille" aria-label="Grande grille"><svg class="i"><use href="#i-grid"/></svg></button>
+          <button data-view="dense" title="Petite grille : plus de cartes à l'écran" aria-label="Petite grille"><svg class="i"><use href="#i-dense"/></svg></button>
+          <button data-view="list" title="Liste : le plus d'enchères à l'écran" aria-label="Liste"><svg class="i"><use href="#i-list"/></svg></button>
+        </div>
+      </div>
+      <div class="toolbar sub">
+        <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="m-search" type="search" placeholder="Rechercher une enchère" autocomplete="off"></label>
+        <select id="m-kind" aria-label="Type">
+          <option value="">Cartes et lots</option>
+          <option value="cartes">Cartes seules</option>
+          <option value="lots">Lots</option>
+        </select>
+        <select id="m-sort" aria-label="Trier">
+          <option value="fin">Trier par fin proche</option>
+          <option value="rarete">Trier par rareté</option>
+          <option value="prixbas">Trier par prix croissant</option>
+          <option value="prix">Trier par prix décroissant</option>
+          <option value="mises">Trier par nombre de mises</option>
+          <option value="lectures">Trier par lectures</option>
+          <option value="nom">Trier par nom</option>
+        </select>
+        <select id="m-end" class="live-only" aria-label="Échéance">
+          <option value="0">Toutes les échéances</option>
+          <option value="60">Fin dans moins d'1 min</option>
+          <option value="300">Fin dans moins de 5 min</option>
+          <option value="1800">Fin dans moins de 30 min</option>
+          <option value="7200">Fin dans moins de 2 h</option>
+        </select>
+        <label class="num">Prix <input id="m-min" type="number" min="0" inputmode="numeric" placeholder="min"> <input id="m-max" type="number" min="0" inputmode="numeric" placeholder="max"></label>
+        <label class="check live-only"><input id="m-nobid" type="checkbox"> Sans mise</label>
+        <button id="m-reset" class="btn small ghost">Réinitialiser les filtres</button>
+      </div>
+      <div id="m-rarities" class="rarities"></div>
+      <p id="m-note" class="note"></p>
+      <div id="mgrid" class="grid g-l"></div>
+      <div id="m-sentinel"></div>
+      <div class="more"><button id="m-more" class="btn hidden">Charger la suite</button></div>
+    </section>
+
+    <section id="tab-trades" class="tabpane hidden">
+      <div class="toolbar">
+        <div id="t-boxes" class="seg" role="group" aria-label="Boîte d'échanges">
+          <button class="on" data-box="received">Reçues</button>
+          <button data-box="sent">Envoyées</button>
+          <button data-box="history">Historique</button>
+        </div>
+        <span id="t-count" class="count"></span>
+        <button id="t-new" class="btn small primary">Nouvel échange</button>
+      </div>
+      <p class="note">Les échanges se font entre amis. Chaque action demande une confirmation.</p>
+      <div id="t-list" class="tlist"></div>
+    </section>
+
+    <section id="tab-arena" class="tabpane hidden">
+      <div id="cb-body"></div>
+    </section>
+
+    <section id="tab-rank" class="tabpane hidden">
+      <div class="toolbar">
+        <div id="r-periods" class="seg" role="group" aria-label="Période">
+          <button data-period="semaine">Cette semaine</button>
+          <button data-period="mois">Ce mois-ci</button>
+          <button class="on" data-period="tout">Depuis le début</button>
+        </div>
+      </div>
+      <div id="r-me"></div>
+      <div id="r-rule" class="note rule"></div>
+      <div id="r-table" class="rtable"></div>
+    </section>
+
+    <section id="tab-messages" class="tabpane hidden">
+      <div class="msgs">
+        <aside class="ms-side">
+          <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ms-find" type="search" placeholder="Écrire à un joueur…" autocomplete="off"></label>
+          <div id="ms-found" class="ulist"></div>
+          <div id="ms-list" class="ms-list"></div>
+        </aside>
+        <div id="ms-thread" class="ms-thread"></div>
+      </div>
+    </section>
+
+    <section id="tab-friends" class="tabpane hidden">
+      <div class="fr-grid">
+        <div id="fr-main"></div>
+        <aside class="fr-side">
+          <h3 class="sec small">Ajouter un joueur</h3>
+          <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="fr-find" type="search" placeholder="Chercher un pseudo" autocomplete="off"></label>
+          <div id="fr-found" class="ulist"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-guild" class="tabpane hidden"><div id="gd-body"></div></section>
+    <section id="tab-profile" class="tabpane hidden"><div id="pf-body"></div></section>
+    <section id="tab-rewards" class="tabpane hidden"><div id="rw-body"></div></section>
+
+    <section id="tab-stats" class="tabpane hidden"></section>
+  </div>
+</div>
+
+<div id="loading" class="loading hidden"><div class="spinner"></div><p id="loading-text">Chargement…</p></div>
+<div id="toast" class="toast hidden" role="alert"></div>
+
+<div id="dialog" class="modal hidden" role="dialog" aria-modal="true"><div id="dialog-body" class="dialog"></div></div>
+
+<div id="quick" class="modal quick hidden" role="dialog" aria-label="Recherche rapide">
+  <div class="qbox">
+    <label class="search big"><svg class="i"><use href="#i-search"/></svg><input id="q-input" placeholder="Chercher une carte, ou aller à un onglet" autocomplete="off" aria-controls="q-list"></label>
+    <div id="q-list" class="qlist" role="listbox"></div>
+    <p class="qhint"><kbd>↑</kbd><kbd>↓</kbd> pour choisir, <kbd>Entrée</kbd> pour ouvrir, <kbd>Échap</kbd> pour fermer</p>
+  </div>
+</div>
+
+<div id="modal" class="modal hidden"><div class="plate" id="modal-body"></div></div>
+
+<!-- packs.js et live.js avant app.js : app.js lance init() dès son chargement et appelle bindPacks() / bindLive() -->
+<script src="packs.js"></script>
+<script src="live.js"></script>
+<script src="social.js"></script>
+<script src="extras.js"></script>
+<script src="actions.js"></script>
+<script src="arena.js"></script>
+<script src="community.js"></script>
+<script src="rewards.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
