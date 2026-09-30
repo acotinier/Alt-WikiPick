@@ -98,7 +98,7 @@
     </section>
   {/if}
 {:else}
-  <section class="reveal">
+  <section class="reveal" style:--n={cards.length} style:--rows={Math.ceil(cards.length / 3)}>
     <div class="pcards">
       {#each cards as c, i (c.cid + i)}
         <button class="pcard" class:open={flipped.includes(i)} class:top={isTop(c)} style:--i={i} style:--c={color(c.rarity)} aria-label={flipped.includes(i) ? c.name : 'Retourner la carte'} onclick={() => flip(i)}>
@@ -151,9 +151,12 @@
   @keyframes tear-body { 15% { transform: translateX(-4px); } 30% { transform: translateX(4px); } 45% { transform: translateX(-3px); } 60% { transform: scale(1.03); } 100% { transform: translateY(30px) scale(.9); opacity: 0; } }
   @keyframes flash { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1.6); } }
 
-  .reveal { display: grid; gap: 24px; justify-items: center; padding: 10px 0 24px; }
-  .pcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: 100%; max-width: 560px; perspective: 1200px; }
-  .pcard { position: relative; padding: 0; aspect-ratio: 5 / 7; background: none; border: 0; border-radius: 13px; cursor: pointer; animation: deal .55s cubic-bezier(.2, .9, .25, 1.1) backwards; animation-delay: calc(var(--i) * 90ms); }
+  /* la révélation tient dans l'écran, sans défilement : les cartes prennent la place restante (3 par rangée, 1 rangée dès 700 px) */
+  .reveal { --bot: calc(var(--nav) + var(--sab)); --cols: 3; --rws: var(--rows); --gap: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
+    height: max(360px, calc(100dvh - var(--top) - var(--sat) - var(--bot) - 118px)); }
+  .pcards { flex: 1; min-height: 0; width: 100%; container-type: size; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: var(--gap); perspective: 1200px; }
+  .pcard { position: relative; flex: none; padding: 0; aspect-ratio: 5 / 7; width: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((100cqh - (var(--rws) - 1) * var(--gap)) / var(--rws) * 5 / 7)); background: none; border: 0; border-radius: 13px; cursor: pointer; animation: deal .55s cubic-bezier(.2, .9, .25, 1.1) backwards; animation-delay: calc(var(--i) * 90ms); }
   @keyframes deal { from { opacity: 0; transform: translateY(-50px) rotate(-5deg) scale(.85); } }
   .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3, .7, .2, 1); }
   .pcard.open .inner { transform: rotateY(180deg); }
@@ -167,9 +170,10 @@
   @keyframes aura { 50% { box-shadow: 0 0 34px 4px rgba(120, 200, 255, .45), inset 0 1px 0 rgba(255, 255, 255, .12); } }
   .pcard.open.top { animation: deal .55s backwards, glow 1.3s .35s ease-out; } @keyframes glow { 30% { filter: drop-shadow(0 0 26px var(--c)); } }
   .new { position: absolute; top: 6px; left: 6px; z-index: 3; padding: 1px 9px; font: 600 11px/17px var(--sans); color: var(--on-ivory); background: var(--ivory); border-radius: 99px; }
+  .pbar, .end { flex: none; height: 104px; align-content: center; }
   .pbar { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 560px; }
   .trk { flex: 1; height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; } .trk i { display: block; height: 100%; background: var(--ivory); transition: width .4s var(--ease); }
-  .end { display: grid; gap: 18px; text-align: center; animation: rise .5s var(--ease); } .end p { font-size: 20px; line-height: 1.35; max-width: 40ch; }
+  .end { display: grid; gap: 18px; text-align: center; animation: rise .5s var(--ease); } .end { gap: 12px; } .end p { font-size: 16px; line-height: 1.3; max-width: 40ch; }
 
   .journal { margin-top: 10px; } .small { font-size: 12.5px; }
   .luck { display: grid; margin: 10px 0 18px; } .luck > div { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
@@ -178,5 +182,6 @@
   .minis { display: flex; flex-wrap: wrap; gap: 7px; }
   .mini { position: relative; width: 40px; aspect-ratio: 5 / 7; padding: 0; overflow: hidden; border: 1px solid var(--c); border-radius: 6px; background: #04060a; box-shadow: 0 0 12px -6px var(--c); cursor: pointer; }
   .mini img { width: 100%; height: 100%; object-fit: cover; } .mini.new::after { content: ""; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--ivory); }
-  @media (min-width: 700px) { .pcards { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 720px; } .pack-wrap { width: 220px; } }
+  @media (min-width: 700px) { .reveal { --cols: var(--n); --rws: 1; --gap: 18px; width: min(1000px, calc(100vw - 2 * var(--gut))); margin-left: 50%; transform: translateX(-50%); } .pack-wrap { width: 220px; } }
+  @media (min-width: 980px) { .reveal { --bot: 0px; width: min(1000px, calc(100vw - var(--rail) - 2 * var(--gut))); } }
 </style>

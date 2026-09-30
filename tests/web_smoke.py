@@ -108,9 +108,15 @@ with sync_playwright() as p:
     pg.click("text=Ouvrir un paquet"); pg.wait_for_selector("[role=dialog] .defi"); pg.click("[role=dialog] .c >> nth=1"); pg.wait_for_selector(".reveal", timeout=6000)
     assert calls(pg, "open_pack")[-1][1:] == ["mockchallenge1", 1] and pg.locator(".pcard").count() == 5 and pg.locator(".pcard.open").count() == 0
     assert pg.evaluate("[...document.querySelectorAll('.pcard')].every((e) => getComputedStyle(e).clipPath === 'none')"), "aucune carte n'est découpée (la forme du paquet ne déborde pas sur elles)"
+    pg.wait_for_timeout(800)
+    fits = "document.documentElement.scrollHeight <= innerHeight + 1"
+    assert pg.evaluate(fits), "la révélation tient dans l'écran, sans défilement"
+    boxes = [e.bounding_box() for e in pg.locator(".pcard").all()]
+    assert all(b and b["width"] > 90 and b["y"] >= 0 and b["y"] + b["height"] <= 844 for b in boxes), f"les 5 cartes sont entièrement visibles {boxes}"
     pg.locator(".pcard").first.click(); pg.wait_for_timeout(300); assert pg.locator(".pcard.open").count() == 1
     pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=6000)
     assert "Paquet ouvert : 5 cartes, dont 3 nouvelles" in pg.inner_text(".end") and len(calls(pg, "pack_seen")) == 1
+    assert pg.evaluate(fits), "l'écran de fin tient aussi dans l'écran"
     pg.screenshot(path=str(out / "reveal.png"))
     pg.click("text=Terminer"); pg.wait_for_selector(".idle")
 
