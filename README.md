@@ -57,7 +57,19 @@ cp .env.example .env     # définis au moins ALTWP_SECRET
 docker compose up -d --build
 ```
 
-Pour essayer l'interface sans compte ni serveur : `cd webapp && npm install && npm run dev:mock` (mot de passe de la démo : `demo`).
+### Essayer en local
+
+```bash
+# 1. La démo : interface seule, données fictives, sans compte (mot de passe : demo)
+cd webapp && npm install && npm run dev:mock        # http://localhost:5173
+
+# 2. Le vrai serveur, avec ton compte wiki-pick
+pip install -r requirements-server.txt
+(cd webapp && npm ci && npm run build)
+ALTWP_COOKIE_SECURE=0 python -m server              # http://localhost:8000
+```
+
+`ALTWP_COOKIE_SECURE=0` ne sert qu'aux essais en local (HTTP) ; en production, garde HTTPS. Pour développer avec rechargement automatique, lance `python -m server` puis `npm run dev` dans `webapp/` (port 5173, relayé vers le serveur).
 
 ## Appli Windows
 
@@ -116,7 +128,7 @@ desktop\build.bat
 Le script installe PyInstaller, construit le dossier `dist\WikiPickDesktop\` (mode `--onedir` : démarrage immédiat) puis le zip `dist\Alt-WikiPick-windows.zip`. Pour publier une release :
 
 ```bat
-gh release create v0.1.0 dist\Alt-WikiPick-windows.zip --title "v0.1.0" --notes "…"
+gh release create v0.2.0 dist\Alt-WikiPick-windows.zip --title "v0.2.0" --notes "…"
 ```
 
 ## Confidentialité et sécurité
