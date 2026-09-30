@@ -1,0 +1,18 @@
+{
+  "name": "alt-wikipick-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "vite --mode mock",
+    "build": "vite build",
+    "build:mock": "vite build --mode mock --outDir dist-mock",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "^5.57.1",
+    "vite": "^8.3.1"
+  }
+}

@@ -12,3 +12,10 @@ session.json
 backup/
 .claude/
 CLAUDE.md
+
+# version web : dépendances, sorties de build, données d'une instance
+node_modules/
+webapp/dist/
+webapp/dist-mock/
+data/
+.env
