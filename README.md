@@ -13,6 +13,20 @@ Collection, paquets, marché aux enchères en direct, échanges, guilde, arène,
 > [!NOTE]
 > Projet **non officiel**, sans lien avec wiki-pick.com. Le site n'a pas d'API publique : l'appli reproduit les appels que fait son propre site. Voir [Avertissements](#avertissements).
 
+## Pourquoi ce projet ?
+
+Alt-WikiPick existe à cause d'un **manque d'optimisation de la version de base** : avec une grosse collection, des centaines d'images et un flux d'enchères en direct, le site web peut devenir lent et gourmand en ressources. Cette alternative vise une expérience plus fluide et plus légère, avec les mêmes fonctions.
+
+Ce qui change concrètement :
+
+- **Affichage immédiat** : la dernière collection connue est gardée en cache sur le disque et s'affiche dès l'ouverture, puis se met à jour en arrière-plan.
+- **Rendu progressif** : les cartes sont dessinées par paquets de 60 au fil du défilement, plutôt que toute la collection d'un coup.
+- **Un seul flux temps réel**, filtré côté Python : seuls les événements qui te concernent arrivent à l'interface, et les enchères ne sont suivies que lorsque l'onglet Marché est ouvert.
+- **Peu d'appels réseau** : un appel pour le profil, un pour la collection par actualisation, pas de sondage agressif.
+- **Une interface sans framework ni étape de build** : quelques centaines de ko de HTML, CSS et JavaScript, et un démarrage d'environ une seconde.
+
+> C'est un constat d'utilisation et un choix de conception, pas un banc d'essai : aucune mesure comparative n'est publiée ici. Le site reste la référence du jeu, et cette appli ne le remplace pas (elle s'appuie sur lui, sans rien lui retirer).
+
 ## Télécharger
 
 1. Va dans [**Releases**](../../releases) et télécharge `Alt-WikiPick-windows.zip`.
