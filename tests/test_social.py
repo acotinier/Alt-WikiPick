@@ -19,7 +19,7 @@ def _api(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setitem(sys.modules, "webview", types.ModuleType("webview"))
-    a = importlib.import_module("app").Api()
+    a = importlib.import_module("desktop.app").Api()
     a._client = mock.MagicMock()
     return a
 

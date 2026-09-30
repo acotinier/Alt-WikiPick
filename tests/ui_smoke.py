@@ -175,7 +175,7 @@ with sync_playwright() as p:
         errs=[]; pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("dialog", lambda d: errs.append("DIALOG:"+d.message))
         pg.add_init_script(stub.replace("__LOGGED__", "true" if logged else "false").replace("__CACHE__", "true" if cache else "false")
                            .replace("__DELAY__", str(delay)).replace("__PREFS__", json.dumps(prefs or {})).replace("__DATA__", json.dumps(data)))
-        pg.goto((ROOT / "web" / "index.html").as_uri())
+        pg.goto((ROOT / "desktop" / "web" / "index.html").as_uri())
         return pg, errs
 
     # --- connexion

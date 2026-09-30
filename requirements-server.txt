@@ -1,0 +1,4 @@
+requests>=2.31
+fastapi>=0.115
+uvicorn>=0.30
+cryptography>=43

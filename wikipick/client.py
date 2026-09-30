@@ -116,6 +116,24 @@ class WikiPickClient:
             raise ApiError(f"Réseau indisponible : {e.__class__.__name__}") from e
         return self._decode(r, path, (401,))
 
+    def login(self, login, password, defi, rep):
+        """Connexion par identifiants (version web) : `POST /api/login` avec la réponse à la question « es-tu un robot ? »
+        (lue dans social.js). Les cookies de session arrivent dans `self.http.cookies`. Le mot de passe n'est jamais gardé."""
+        try:
+            r = self.http.post(BASE + "/api/login", json={"login": login, "password": password, "defi": defi, "rep": rep},
+                               timeout=25, headers={"Origin": BASE, "Referer": BASE + "/"})
+        except requests.RequestException as e:
+            raise ApiError(f"Réseau indisponible : {e.__class__.__name__}") from e
+        if r.status_code >= 400:  # 401 = mauvais identifiants ici, pas une session expirée
+            try:
+                msg = (r.json() or {}).get("error")
+            except (ValueError, AttributeError):
+                msg = None
+            raise ApiError(msg if isinstance(msg, str) and msg else f"Connexion refusée (HTTP {r.status_code}).")
+        if not self.http.cookies:
+            raise ApiError("Le site n'a pas ouvert de session : réessaie.")
+        return True
+
     def state(self):
         return self._get_json("/api/state")
 

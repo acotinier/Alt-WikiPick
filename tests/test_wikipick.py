@@ -277,7 +277,7 @@ def test_api_exposes_only_methods(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))  # jamais le vrai dossier de données de l'utilisateur
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setitem(sys.modules, "webview", types.ModuleType("webview"))
-    api = importlib.import_module("app").Api()
+    api = importlib.import_module("desktop.app").Api()
     public = [k for k, v in vars(api).items() if not k.startswith("_") and not callable(v)]
     assert public == [], f"attributs publics exposés à pywebview : {public} (les préfixer par _)"
 
@@ -345,7 +345,7 @@ def _api(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setitem(sys.modules, "webview", types.ModuleType("webview"))
-    return importlib.import_module("app").Api()
+    return importlib.import_module("desktop.app").Api()
 
 
 def test_json_store_is_tolerant_and_atomic(tmp_path):
@@ -380,7 +380,8 @@ def test_open_pack_is_journaled_and_capped(tmp_path, monkeypatch):
     assert len(hist) == 1 and hist[0]["cards"][0]["name"] == "A" and hist[0]["cards"][0]["new"] is True and hist[0]["ts"] > 0
     raw = (tmp_path / "WikiPickDesktop" / "packs_history.json").read_text(encoding="utf-8")
     assert "secret@example.org" not in raw and "long extrait" not in raw, "le journal ne garde que le strict nécessaire"
-    mod = sys.modules["app"]
+    import importlib
+    mod = importlib.import_module("wikipick.service")
     monkeypatch.setattr(mod, "PACK_HISTORY_MAX", 3)
     for _ in range(5):
         a.open_pack()

@@ -25,7 +25,7 @@ def make_api(tmp_path, monkeypatch, me=None):
     monkeypatch.setenv("APPDATA", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setitem(sys.modules, "webview", types.ModuleType("webview"))
-    api = importlib.import_module("app").Api()
+    api = importlib.import_module("desktop.app").Api()
     api._me = me if me is not None else {"id": 1, "name": "Moi"}
     api._client = mock.Mock()
     return api
