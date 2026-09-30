@@ -142,7 +142,7 @@ gh release create v0.2.0 dist\Alt-WikiPick-windows.zip --title "v0.2.0" --notes 
 
 - **Aucune automatisation.** Un clic = une action, une à la fois, avec confirmation quand elle engage des pièces ou des cartes. Pas de mise automatique, pas d'ouverture de paquets en boucle, rien qui joue à ta place. Ni l'appli ni le serveur ne répondent **jamais** à la vérification « es-tu un robot ? » du site : elle te pose la question et transmet ton clic.
 - Volontairement absents : l'administration, les paiements, les fonctions réservées aux abonnés WIKI-PRO si tu ne l'es pas.
-- **Les conditions d'utilisation du jeu n'ont pas été lues.** Un client tiers est utilisé à tes risques ; si tu l'utilises, l'héberges pour d'autres ou le diffuses, prévenir le développeur du jeu est une bonne idée.
+- **Le jeu n'a pas de conditions d'utilisation publiées.** Un client tiers est utilisé à tes risques ; si tu l'utilises, l'héberges pour d'autres ou le diffuses, prévenir le développeur du jeu est une bonne idée.
 - **État du projet** : le décodage de la collection et des paquets, et la question de vérification de la connexion web, ont été confrontés à de vraies réponses du site ; tout le reste (marché, enchères, échanges, arène, messagerie, guilde, récompenses, connexion par identifiants) suit les formats lus dans le JS public du site et n'a pas été entièrement observé en conditions réelles. L'image Docker n'a pas encore été construite par l'auteur. Si un écran est vide ou décalé, ouvre une [issue](../../issues).
 
 ## Tests

@@ -2,7 +2,7 @@
 
 La version web est une application à installer **chez toi** : un petit serveur (Python) qui parle à wiki-pick.com pour toi, et une interface (Svelte) pensée pour le téléphone. Chaque personne qui s'y connecte utilise son propre compte du jeu ; tu décides qui peut venir.
 
-> Projet **non officiel**, sans lien avec wiki-pick.com, qui n'a pas d'API publique. Une instance multiplie les connexions vers le site (une par joueur actif) : reste raisonnable (`ALTWP_MAX_USERS`) et, si tu ouvres ton instance à d'autres, préviens le développeur du jeu. Les conditions d'utilisation du jeu n'ont pas été lues.
+> Projet **non officiel**, sans lien avec wiki-pick.com, qui n'a pas d'API publique. Une instance multiplie les connexions vers le site (une par joueur actif) : reste raisonnable (`ALTWP_MAX_USERS`) et, si tu ouvres ton instance à d'autres, préviens le développeur du jeu. Le jeu n'a pas de conditions d'utilisation publiées.
 
 ## Ce qu'il te faut
 
