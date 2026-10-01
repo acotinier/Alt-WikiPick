@@ -18,7 +18,7 @@ cp .env.example .env            # puis édite-le : au minimum ALTWP_SECRET
 docker compose up -d --build
 ```
 
-L'appli écoute sur `127.0.0.1:8000`. Pour la mettre sur Internet avec HTTPS automatique, le plus simple est [Caddy](https://caddyserver.com) : copie `Caddyfile.example`, remplace le nom de domaine par le tien, et mets `ALTWP_TRUST_PROXY=1` dans `.env`.
+L'appli écoute sur `127.0.0.1:8000` (change le port avec `ALTWP_HOST_PORT` dans `.env`, sans toucher à `docker-compose.yml`). Pour la mettre sur Internet avec HTTPS automatique, le plus simple est [Caddy](https://caddyserver.com) : copie `Caddyfile.example`, remplace le nom de domaine par le tien, et mets `ALTWP_TRUST_PROXY=1` dans `.env`.
 
 > L'image Docker n'a pas encore été construite par l'auteur dans son environnement de développement (le même enchaînement a été exécuté à la main : `npm ci && npm run build`, `pip install -r requirements-server.txt`, `python -m server`). Si quelque chose coince, ouvre une issue.
 
@@ -64,7 +64,7 @@ ALTWP_SECRET="une longue phrase" ALTWP_COOKIE_SECURE=0 python -m server    # htt
 ## Sauvegarde et mise à jour
 
 - **Sauvegarde** : le dossier des données (volume Docker `altwp-data`). `accounts.db` et `secret.key` (ou ta `ALTWP_SECRET`) vont ensemble. Perdre la clé n'est pas grave : les joueurs se reconnectent.
-- **Mise à jour** : `git pull && docker compose up -d --build`. Les sessions survivent.
+- **Mise à jour** : `git pull && docker compose up -d --build`. Les sessions survivent. Si `git pull` refuse à cause d'un fichier que tu as modifié (`docker-compose.yml`, par exemple) : `git stash && git pull && git stash pop`, ou remets le fichier d'origine (`git checkout docker-compose.yml`) et règle ce que tu voulais dans `.env`.
 - **Santé** : `GET /healthz` renvoie le nombre de joueurs en mémoire.
 
 ## Développer

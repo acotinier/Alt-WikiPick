@@ -4,7 +4,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8000:8000"   # seulement en local : c'est ton reverse proxy (Caddy, nginx…) qui reçoit Internet
+      - "127.0.0.1:${ALTWP_HOST_PORT:-8000}:8000"   # seulement en local : c'est ton reverse proxy (Caddy, nginx…) qui reçoit Internet
     env_file: .env
     volumes:
       - altwp-data:/data
