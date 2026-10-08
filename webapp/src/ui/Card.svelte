@@ -1,11 +1,12 @@
 <script>
   // La face d'une carte, la même partout. Un <button> quand elle est cliquable (clavier et lecteurs d'écran gratuits).
   import { color, compact, isTop, thumb } from '../lib/format.js';
-  import { app } from '../lib/store.svelte.js';
+  import { app, coll } from '../lib/store.svelte.js';
   import Icon from './Icon.svelte';
   let { card, onclick = null, mini = false, width = 250, picked = false, children = null } = $props();
   let failed = $state(false);
   const label = $derived(app.names[card.rarity] || card.rarity);
+  const dots = $derived(card.tags && card.tags.length ? card.tags.map((id) => (coll.tags.find((t) => t.id === id) || {}).color).filter(Boolean).slice(0, 5) : []);
   const src = $derived(card.img ? thumb(card.img, mini ? 120 : width) : null);
 </script>
 
@@ -18,6 +19,7 @@
     {:else}
       <span class="ini">{[...card.name][0] || '?'}</span>
     {/if}
+    {#if dots.length && !mini}<span class="dots">{#each dots as d}<i style:background={d}></i>{/each}</span>{/if}
     {#if card.copies > 1 && !mini}<span class="copies">×{card.copies}</span>{/if}
     {#if children}{@render children()}{/if}
   </span>
@@ -25,6 +27,7 @@
     <span class="meta">
       <span class="rar">{label}{#if card.shiny}<Icon name="spark" />{/if}</span>
       <span class="name">{card.name}</span>
+      {#if card.desc}<span class="short">{card.desc}</span>{/if}
       <span class="foot"><span class="reads"><Icon name="eye" />{compact(card.reads)}</span>{#if card.locked}<Icon name="lock" />{/if}</span>
     </span>
   {/if}
@@ -56,7 +59,10 @@
   .meta { position: relative; display: grid; gap: 3px; align-content: start; padding: 8px 10px 10px; }
   .rar { display: inline-flex; align-items: center; gap: 7px; font: 600 10.5px var(--sans); letter-spacing: .09em; text-transform: none; font-variant-caps: all-small-caps; font-size: 12.5px; color: var(--c); }
   .rar::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); border-radius: 1px; background: var(--c); box-shadow: 0 0 8px var(--c); }
-  .name { font: 600 15px/1.18 var(--serif); letter-spacing: -.005em; min-height: 2.36em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .name { font: 600 15px/1.18 var(--serif); letter-spacing: -.005em; min-height: 1.18em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .short { min-width: 0; overflow-wrap: anywhere; font: 400 11.5px/1.25 var(--sans); color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .dots { position: absolute; left: 6px; bottom: 6px; z-index: 2; display: flex; gap: 4px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgba(5, 7, 11, .8); }
   .foot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--muted); }
   .reads { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
   .mini { border-radius: 8px; contain-intrinsic-size: auto 60px; }

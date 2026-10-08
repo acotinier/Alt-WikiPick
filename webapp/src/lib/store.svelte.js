@@ -15,6 +15,7 @@ export const app = $state({
 class Collection {
   cards = $state.raw([]);
   tags = $state.raw([]);
+  masked = $state.raw([]); // exemplaires de cartes exclusives masqués de ton profil
   rank = $state.raw({});
   stats = $state.raw(null);
   loaded = $state(false);
@@ -24,13 +25,26 @@ class Collection {
 export const coll = new Collection();
 
 // Ce qui est ouvert par-dessus l'écran courant : la fiche d'une carte, les notifications, le menu du compte.
-export const ui = $state({ card: null, bell: false, menu: false, trade: null });
+export const ui = $state({ card: null, bell: false, menu: false, trade: null, tags: false });
 export const openCard = (c) => { ui.card = c; };
 export const openTrade = (to, counterOf = null, note = '') => { ui.trade = { to, counterOf, note }; };
 
 // Cartes surveillées (liste locale à l'instance) : une alerte quand l'une d'elles est mise aux enchères.
 export const watch = $state({ list: [] });
+// Cartes masquées de TA collection (liste locale à l'instance : rien n'est écrit sur wiki-pick.com).
+export const hidden = $state({ list: [], set: new Set() });
+export const setHidden = (list) => { hidden.list = list; hidden.set = new Set(list); };
+export async function loadHidden() { const r = await call('hidden_get'); if (r && r.ok) setHidden(r.list); }
+
 export async function loadWatch() { const r = await call('watch_get'); if (r && r.ok) watch.list = r.list; }
+
+// Étiquettes : la liste (créer, renommer, supprimer) et celles d'une carte. Les cartes ne se modifient pas sur place : on les remplace.
+export function setTags(tags) {
+  const ids = new Set(tags.map((t) => t.id));
+  coll.tags = tags;
+  if (coll.cards.some((c) => (c.tags || []).some((i) => !ids.has(i)))) coll.cards = coll.cards.map((c) => ((c.tags || []).some((i) => !ids.has(i)) ? { ...c, tags: c.tags.filter((i) => ids.has(i)) } : c));
+}
+export const setCardTags = (cid, tagIds) => { coll.cards = coll.cards.map((c) => (c.cid === cid ? { ...c, tags: tagIds } : c)); };
 
 export const toasts = $state([]);
 let toastId = 0;
@@ -83,6 +97,7 @@ export async function enter(name) {
   await refreshMe();
   refreshCollection();            // en arrière-plan
   loadWatch();
+  loadHidden();
   stopLive?.();
   stopLive = connectEvents({
     onState: (s) => { app.live = s === 'live' ? 'live' : 'down'; },
@@ -114,7 +129,7 @@ export async function refreshMe() {
 export const refreshMeSoon = debounce(refreshMe, 400);
 
 // ---- collection : cache navigateur d'abord, serveur ensuite, l'écran ne bouge que si quelque chose a changé ----
-const sig = (cards) => cards.map((c) => `${c.cid}|${c.name}|${c.copies}|${c.rarity}|${c.reads}|${c.locked ? 1 : 0}`).join(';');
+const sig = (cards) => cards.map((c) => `${c.cid}|${c.name}|${c.copies}|${c.rarity}|${c.reads}|${c.locked ? 1 : 0}|${(c.tags || []).join(',')}|${c.img ? 1 : 0}`).join(';');
 const cacheKey = () => `coll:${app.name}`;
 
 async function hydrateCollection() {
@@ -122,7 +137,7 @@ async function hydrateCollection() {
   if (cached && cached.cards && !coll.loaded) { applyCollection(cached); }
 }
 function applyCollection(d) {
-  coll.cards = d.cards; coll.tags = d.tags || []; coll.rank = d.rank || {}; coll.stats = d.stats || null; coll.loaded = true;
+  coll.cards = d.cards; coll.tags = d.tags || []; coll.masked = d.masked || []; coll.rank = d.rank || {}; coll.stats = d.stats || null; coll.loaded = true;
 }
 export async function refreshCollection() {
   if (coll.loading) return;
@@ -131,8 +146,8 @@ export async function refreshCollection() {
   coll.loading = false;
   if (!r || !r.ok) { if (!coll.loaded && r && !r.expired) toast(r.error || 'Collection indisponible', 'error'); return; }
   if (!coll.loaded || sig(coll.cards) !== sig(r.cards)) applyCollection(r);
-  else { coll.rank = r.rank || {}; coll.stats = r.stats || null; }
-  idbSet(cacheKey(), { cards: r.cards, tags: r.tags, rank: r.rank, stats: r.stats });
+  else { coll.rank = r.rank || {}; coll.stats = r.stats || null; coll.masked = r.masked || []; }
+  idbSet(cacheKey(), { cards: r.cards, tags: r.tags, masked: r.masked, rank: r.rank, stats: r.stats });
 }
 export const collectionChanged = debounce(refreshCollection, 1500); // gagné, vendu, échangé : la collection a bougé
 

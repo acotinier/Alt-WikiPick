@@ -223,13 +223,17 @@ function applyFilters(keep = false) {
   }
   const prev = S.shown, y = window.scrollY;
   const q = $("f-search").value.trim().toLowerCase();
-  const tag = $("f-tag").value; const dups = $("f-dups").checked; const sort = $("f-sort").value;
+  const tag = $("f-tag").value; const dups = $("f-dups").checked; const sort = $("f-sort").value; const onlyHidden = $("f-hidden").checked;
   const list = S.data.cards.filter((c) =>
     (!S.rarities.size || S.rarities.has(c.rarity)) &&
     (!q || c.name.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)) &&
     (!tag || c.tags.map(String).includes(tag)) &&
-    (!dups || c.copies > 1));
+    (!dups || c.copies > 1) &&
+    HID.set.has(c.cid) === onlyHidden);
+  // date d'obtention : le dernier exemplaire reçu (les identifiants d'exemplaires croissent avec le temps, quelle que soit la source)
+  const last = (c) => (c._last ??= (c.ids || []).reduce((m, i) => (i > m ? i : m), 0));
   const by = {
+    recent: (a, b) => last(b) - last(a) || rarityRank(a.rarity) - rarityRank(b.rarity),
     reads: (a, b) => b.reads - a.reads,
     rarity: (a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.shiny) - Number(a.shiny) || b.reads - a.reads,
     name: (a, b) => a.name.localeCompare(b.name, "fr"),
@@ -262,6 +266,7 @@ function cardNode(c, onclick = () => openModal(c)) {
     el("div", { class: "meta" },
       el("span", { class: "rar" }, label(c.rarity), c.shiny ? icon("spark") : null),
       el("h3", { text: c.name }),
+      c.desc ? el("p", { class: "short", text: c.desc }) : null,
       el("div", { class: "foot" },
         el("span", { class: "reads", title: "Lectures de l'article Wikipédia" }, icon("eye"), compact(c.reads)),
         c.locked ? el("span", { title: "Verrouillée" }, icon("lock")) : null)));
@@ -318,6 +323,8 @@ function openModal(c) {
         watchButton(c)),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
       chips.length ? el("div", { class: "row" }, chips.map((t) => el("span", { class: "st", text: t }))) : null,
+      own ? el("div", { class: "tagbox" }, el("h3", { class: "eyebrow", text: "Étiquettes" }), tagChips(c, own)) : null,
+      own ? el("div", { class: "row" }, hideButton(c), exclusiveMaskButton(c, own)) : null,
       el("div", { id: "sheet-extra", class: "sheet-extra" })));
   $("modal").classList.remove("hidden");
   loadCardSheet(c);
@@ -386,7 +393,8 @@ function bind() {
   $("btn-login").onclick = startLogin; $("btn-cookie").onclick = useCookies;
   $("btn-quick2").onclick = () => openQuick();
   bindUser();
-  ["f-search", "f-sort", "f-tag", "f-dups"].forEach((id) => $(id).addEventListener(id === "f-search" ? "input" : "change", () => applyFilters()));
+  $("btn-tags").onclick = openTagManager;
+  ["f-search", "f-sort", "f-tag", "f-dups", "f-hidden"].forEach((id) => $(id).addEventListener(id === "f-search" ? "input" : "change", () => applyFilters()));
   document.querySelectorAll(".tab").forEach((b) => b.onclick = () => { if (b.dataset.tab === "profile") { PF.name = null; PF.data = null; } setTab(b.dataset.tab); });
   bindPacks(); bindLive(); bindSocial(); bindExtras(); bindActions(); bindCommunity();
   $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) closeModal(); });

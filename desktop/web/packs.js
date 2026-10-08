@@ -3,7 +3,7 @@
    Écriture : un clic = un paquet (api.open_pack), jamais en boucle.
    Chargé AVANT app.js : ne rien exécuter ici au chargement, S / $ / el… n'existent pas encore. */
 
-const PK = { cards: [], flipped: 0, opening: false };
+const PK = { cards: [], flipped: 0, opening: false, many: 3 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -17,6 +17,45 @@ function renderPacks() {
   gold.classList.toggle("hidden", !(me.proPack || me.paquetOr)); gold.disabled = PK.opening;
   gold.textContent = `${me.proPack ? "Paquet PRO du jour" : "Ton paquet doré offert"} · ${plural(me.proCards || 20, "carte")}`;
   $("pack").tabIndex = n < 1 ? -1 : 0;
+  const k = manyCount(); $("pk-many").classList.toggle("hidden", n < 2); $("many-n").textContent = String(k);
+  $("btn-many").textContent = `Ouvrir ${k} paquets d'un coup`; $("btn-many").disabled = PK.opening;
+  $("many-minus").disabled = k <= 2; $("many-plus").disabled = k >= Math.min(n, 20);
+}
+
+/* ---------- plusieurs paquets d'affilée : le nombre est choisi par le joueur ; s'arrête si le site demande sa vérification ---------- */
+function manyCount() { return Math.max(2, Math.min(PK.many, (S.data && S.data.me.packs) || 0, 20)); }
+async function openMany(proof) {
+  const me = S.data && S.data.me, k = manyCount();
+  if (PK.opening || !me || (me.packs ?? 0) < 2) return;
+  if (!proof && me.defi) { PK.opening = true; renderPacks(); const p = await askChallenge(); PK.opening = false; renderPacks(); return p ? openMany(p) : undefined; }
+  PK.opening = true; renderPacks();
+  const r = await (proof ? api().open_packs(k, proof.defi, proof.rep) : api().open_packs(k)).catch((e) => ({ ok: false, error: "Erreur inattendue : " + e }));
+  PK.opening = false;
+  if (!r.ok) {
+    renderPacks();
+    if (r.expired) return sessionLost(r);
+    if (r.challenge && !proof) { me.defi = true; return openMany(); }
+    return toast(r.error || "Ouverture impossible");
+  }
+  S.data.me = r.me; S.dirty = true; renderHeader(); renderPacks();
+  showBatch(r);
+  api().pack_seen();
+}
+function showBatch(r) {
+  const cards = r.packs.flat().sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.shiny) - Number(a.shiny));
+  $("bt-title").textContent = plural(r.packs.length, "paquet") + (r.packs.length > 1 ? " ouverts" : " ouvert");
+  $("bt-sum").replaceChildren(`${plural(cards.length, "carte")}, dont ${plural(cards.filter((c) => c.new).length, "nouvelle")}. `,
+    ...(cards.length ? ["La plus rare : ", el("b", { style: `color:${color(cards[0].rarity)}`, text: cards[0].name }), "."] : []));
+  const note = r.stopped === "challenge" ? "Le site demande une petite vérification : elle t'attend au prochain paquet que tu ouvres."
+    : r.stopped === "error" ? `Arrêt après ${plural(r.packs.length, "paquet")} : ${r.error}`
+    : r.packs.length < r.wanted ? `Plus de paquet en réserve : ${plural(r.packs.length, "paquet")} sur ${r.wanted}.` : "";
+  $("bt-note").textContent = note; $("bt-note").classList.toggle("hidden", !note);
+  $("bt-grid").replaceChildren(...cards.map((c) => cardNode(c)));
+  $("packs-idle").classList.add("hidden"); $("pk-batch").classList.remove("hidden");
+}
+function doneBatch() {
+  $("pk-batch").classList.add("hidden"); $("packs-idle").classList.remove("hidden");
+  loadJournal(); renderPacks(); refresh();
 }
 
 function tilt(e, target, max) { // le foil suit le pointeur
@@ -181,7 +220,7 @@ function donePack(again) {
 
 function resetPacks() { // déconnexion
   PK.cards = []; PK.flipped = 0; PK.opening = false;
-  $("reveal").classList.add("hidden"); $("packs-idle").classList.remove("hidden"); $("pack").classList.remove("tearing");
+  $("reveal").classList.add("hidden"); $("pk-batch").classList.add("hidden"); $("packs-idle").classList.remove("hidden"); $("pack").classList.remove("tearing");
   $("tab-packs").classList.remove("revealing"); PJ.packs = []; renderJournal();
 }
 
@@ -194,6 +233,9 @@ function bindPacks() {
   const box = $("pk-cards");
   box.addEventListener("pointermove", (e) => { const c = e.target.closest(".pcard.open"); if (c) tilt(e, c, 14); });
   box.addEventListener("pointerout", (e) => { const c = e.target.closest(".pcard"); if (c && !c.contains(e.relatedTarget)) untilt(c); });
+  $("many-minus").onclick = () => { PK.many = manyCount() - 1; renderPacks(); };
+  $("many-plus").onclick = () => { PK.many = manyCount() + 1; renderPacks(); };
+  $("btn-many").onclick = () => openMany(); $("bt-done").onclick = doneBatch;
   $("btn-flip-all").onclick = flipAll;
   $("btn-done").onclick = () => donePack(false); $("btn-again").onclick = () => donePack(true);
   document.addEventListener("keydown", (e) => { // Espace : carte suivante, hors champs et boutons

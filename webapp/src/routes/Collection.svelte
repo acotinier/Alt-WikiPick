@@ -2,21 +2,25 @@
   // La collection : recherche, raretés, tri, doublons. Défilement virtuel : seules les cartes visibles existent dans la page.
   import { call } from '../lib/api.js';
   import { debounce, fmt, plural, rarityRank, color } from '../lib/format.js';
-  import { app, coll, openCard } from '../lib/store.svelte.js';
+  import { app, coll, hidden, openCard, ui } from '../lib/store.svelte.js';
   import Card from '../ui/Card.svelte';
   import Empty from '../ui/Empty.svelte';
   import Icon from '../ui/Icon.svelte';
   import Sheet from '../ui/Sheet.svelte';
   import VirtualGrid from '../ui/VirtualGrid.svelte';
 
-  let q = $state(''), typed = $state(''), sort = $state('rarity'), tag = $state(''), dups = $state(false), rars = $state([]), filters = $state(false);
+  let q = $state(''), typed = $state(''), sort = $state('rarity'), tag = $state(''), dups = $state(false), rars = $state([]), filters = $state(false), showHidden = $state(false);
   const setQ = debounce((v) => (q = v.trim().toLowerCase()), 160);
 
-  call('prefs_get').then((r) => { if (r && r.ok && ['rarity', 'reads', 'name', 'copies'].includes(r.prefs.collection_sort)) sort = r.prefs.collection_sort; });
+  call('prefs_get').then((r) => { if (r && r.ok && ['rarity', 'reads', 'name', 'copies', 'recent'].includes(r.prefs.collection_sort)) sort = r.prefs.collection_sort; });
   const changeSort = (v) => { sort = v; call('prefs_set', 'collection_sort', v); };
 
   const present = $derived([...new Set(coll.cards.map((c) => c.rarity))].sort((a, b) => rarityRank(a) - rarityRank(b)));
+  // date d'obtention : le dernier exemplaire reçu (les identifiants d'exemplaires croissent avec le temps, quelle que soit la source :
+  // paquet, échange, achat, fusion, récompense). Calculé une fois par carte.
+  const lastId = (() => { const m = new WeakMap(); return (c) => { let v = m.get(c); if (v === undefined) { v = 0; for (const i of c.ids || []) if (i > v) v = i; m.set(c, v); } return v; }; })();
   const SORTS = {
+    recent: (a, b) => lastId(b) - lastId(a) || rarityRank(a.rarity) - rarityRank(b.rarity),
     reads: (a, b) => b.reads - a.reads,
     rarity: (a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.shiny) - Number(a.shiny) || b.reads - a.reads,
     name: (a, b) => a.name.localeCompare(b.name, 'fr'),
@@ -24,11 +28,11 @@
   };
   const list = $derived.by(() => {
     const out = coll.cards.filter((c) => (!rars.length || rars.includes(c.rarity)) && (!q || c.name.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q))
-      && (!tag || (c.tags || []).map(String).includes(tag)) && (!dups || c.copies > 1));
+      && (!tag || (c.tags || []).map(String).includes(tag)) && (!dups || c.copies > 1) && hidden.set.has(c.cid) === showHidden);
     return out.sort(SORTS[sort]);
   });
   const toggle = (r) => (rars = rars.includes(r) ? rars.filter((x) => x !== r) : [...rars, r]);
-  const active = $derived((tag ? 1 : 0) + (dups ? 1 : 0) + (sort !== 'rarity' ? 1 : 0));
+  const active = $derived((tag ? 1 : 0) + (dups ? 1 : 0) + (showHidden ? 1 : 0) + (sort !== 'rarity' ? 1 : 0));
 </script>
 
 <div class="bar">
@@ -49,7 +53,7 @@
 {:else if !list.length}
   <div class="grid"><Empty title="Aucune carte" text={coll.cards.length ? 'Aucune carte ne correspond à ces filtres.' : 'Ouvre quelques paquets pour commencer ta collection.'} /></div>
 {:else}
-  <VirtualGrid items={list} key={(c) => c.cid + (c.shiny ? '*' : '')} resetKey={`${q}|${sort}|${tag}|${dups}|${rars.join()}`}>
+  <VirtualGrid items={list} key={(c) => c.cid + (c.shiny ? '*' : '')} resetKey={`${q}|${sort}|${tag}|${dups}|${showHidden}|${rars.join()}`}>
     {#snippet item(c)}<Card card={c} onclick={() => openCard(c)} />{/snippet}
   </VirtualGrid>
 {/if}
@@ -58,13 +62,15 @@
   <div class="form">
     <label>Trier par
       <select value={sort} onchange={(e) => changeSort(e.target.value)}>
-        <option value="rarity">Rareté</option><option value="reads">Lectures</option><option value="name">Nom</option><option value="copies">Exemplaires</option>
+        <option value="rarity">Rareté</option><option value="recent">Date d'obtention</option><option value="reads">Lectures</option><option value="name">Nom</option><option value="copies">Exemplaires</option>
       </select>
     </label>
     <label>Tag
       <select bind:value={tag}><option value="">Tous les tags</option>{#each coll.tags as t}<option value={String(t.id)}>{t.name}</option>{/each}</select>
     </label>
     <label class="check"><input type="checkbox" bind:checked={dups} />Doublons seulement</label>
+    <label class="check"><input type="checkbox" bind:checked={showHidden} />Seulement les cartes masquées ({hidden.list.length})</label>
+    <button class="btn block" onclick={() => { filters = false; ui.tags = true; }}>Gérer mes étiquettes</button>
     <button class="btn primary block" onclick={() => (filters = false)}>Voir {plural(list.length, 'carte')}</button>
   </div>
 </Sheet>

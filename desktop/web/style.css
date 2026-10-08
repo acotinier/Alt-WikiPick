@@ -1196,3 +1196,27 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 .fu-help { display: grid; gap: 14px; font-size: 14.5px; line-height: 1.5; max-width: 520px; }
 .fu-help table { width: 100%; border-collapse: collapse; } .fu-help th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12.5px; }
 .fu-help td, .fu-help th { padding: 7px 4px; border-bottom: 1px solid var(--line); } .fu-help ul { display: grid; gap: 8px; padding-left: 18px; } .fu-help .muted { font-size: 13px; }
+
+/* ---- étiquettes, cartes masquées, plusieurs paquets, aperçu ---- */
+.card .short { min-width: 0; overflow-wrap: anywhere; font: 400 11.5px/1.25 var(--sans); color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+.tagbox { display: grid; gap: 8px; margin-top: 4px; }
+.tg { display: flex; flex-wrap: wrap; gap: 8px; }
+.tgc { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 12px; color: var(--muted); font: 500 13px var(--sans); cursor: pointer; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); border-radius: 99px; }
+.tgc::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--t); }
+.tgc.on { color: var(--text); border-color: var(--t); background: color-mix(in srgb, var(--t) 18%, transparent); }
+.tgc.add { border-style: dashed; } .tgc.add::before { display: none; }
+.tagmgr { display: grid; gap: 14px; min-width: min(420px, 80vw); }
+.tagmgr-new { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.tagmgr .sw { display: flex; flex-wrap: wrap; gap: 8px; }
+.tagmgr .sw button { width: 24px; height: 24px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+.tagmgr .sw button.on { border-color: var(--ivory); }
+.tagmgr-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; max-height: 46vh; overflow: auto; }
+.tagmgr-list li { display: grid; gap: 8px; padding: 10px; background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: 12px; }
+.pk-many { display: flex; align-items: center; gap: 10px; margin-top: 12px; justify-content: center; }
+.stepper { display: flex; align-items: center; gap: 2px; padding: 3px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }
+.stepper button { width: 36px; height: 40px; color: var(--text); font: 600 20px var(--sans); background: none; border: 0; border-radius: 9px; cursor: pointer; }
+.stepper button:disabled { opacity: .35; cursor: default; }
+.stepper b { min-width: 28px; text-align: center; font: 600 18px var(--serif); }
+.pk-batch { display: grid; gap: 14px; max-width: 1100px; margin: 0 auto; }
+.pk-batch .note { padding: 10px 12px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }

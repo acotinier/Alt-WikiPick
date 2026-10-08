@@ -41,7 +41,7 @@ function stats(cards) {
 const card = (i, r, extra) => { const a = ARTICLES[i % ARTICLES.length]; return { cid: 'fr:' + a[0], name: a[1], desc: a[2], img: a[3], rarity: r, reads: 5000 + i * 1111, shiny: false, copies: 1, locked: false, tags: [], ids: [], url: 'https://fr.wikipedia.org/wiki/' + a[0], new: false, ...extra }; };
 
 const S = {
-  job: null,
+  job: null, hidden: [], tags: [{ id: 7, name: 'Peintres', color: '#8b5cf6' }, { id: 8, name: 'À échanger', color: '#22c55e' }],
   fus: { n: 0, stock: Array.from({ length: 60 }, (_, i) => ({ ...card(i, 'C'), id: 5000 + i, ids: [5000 + i], copies: i < 45 ? 2 : 1 })) },
   logged: localStorage.getItem('mock-logged') !== '0',
   cards: makeCards(), coins: 1629, packs: 3, defi: false, unread: 2, unreadMsg: 2, friendReq: 1, trades: 1,
@@ -91,7 +91,7 @@ const guildData = (id) => ({ id, name: id === 3 ? 'Les Encyclopédistes' : 'Autr
 window.__mock = S; // idem : les tests peuvent préparer l'état
 const H = {
   load_me: () => ({ ok: true, me: me(), names: NAMES, info: INFO, rewards: rewards() }),
-  load_collection: () => ({ ok: true, rank: { rank: 232, total: 6898, points: 14374, cards: 300, toNext: 15, nextName: 'Rival' }, tags: [{ id: 7, name: 'Peintres', color: '#fff' }], cards: S.cards, stats: stats(S.cards) }),
+  load_collection: () => ({ ok: true, rank: { rank: 232, total: 6898, points: 14374, cards: 300, toNext: 15, nextName: 'Rival' }, tags: S.tags, masked: S.masked || [], cards: S.cards, stats: stats(S.cards) }),
   cache_get: () => ({ ok: false }),
   prefs_get: () => ({ ok: true, prefs: S.prefs }),
   prefs_set: (k, v) => { S.prefs[k] = v; return { ok: true }; },
@@ -176,6 +176,27 @@ const H = {
     history: [{ me: 2, them: 1, defended: false, opponent: 'Bob', gain: 30, when: now() - 600 }] }),
   combat_state: () => ({ ok: true, defi: null }),
   actions_get: () => ({ ok: true, actions: S.log }),
+  exclusive_hide: (id, on) => { S.masked = (S.masked || []).filter((i) => i !== id); if (on === true) S.masked.push(id); return { ok: true, masked: on === true }; },
+  tags_get: () => ({ ok: true, tags: S.tags }),
+  tag_save: (id, name, color) => {
+    if (!name || !name.trim() || name.length > 20) return { ok: false, error: "Le nom d'une étiquette fait de 1 à 20 caractères." };
+    if (id == null) { id = Math.max(0, ...S.tags.map((t) => t.id)) + 1; S.tags.push({ id, name: name.trim(), color }); }
+    else S.tags = S.tags.map((t) => (t.id === id ? { ...t, name: name.trim(), color } : t));
+    return { ok: true, tags: S.tags, id };
+  },
+  tag_delete: (id) => { S.tags = S.tags.filter((t) => t.id !== id); S.cards.forEach((c) => { c.tags = (c.tags || []).filter((i) => i !== id); }); return { ok: true, tags: S.tags }; },
+  card_tags_set: (cid, ids) => { const c = S.cards.find((x) => x.cid === cid); if (c) c.tags = ids; return { ok: true, tag_ids: ids }; },
+  hidden_get: () => ({ ok: true, list: S.hidden }),
+  hidden_set: (cids, on) => { S.hidden = S.hidden.filter((c) => !cids.includes(c)); if (on === true) S.hidden.push(...cids); return { ok: true, list: S.hidden }; },
+  open_packs: (count, defi, rep) => {
+    if (S.defi && defi == null) return { ok: false, challenge: true, error: "Le site demande une petite vérification avant d'ouvrir tes paquets." };
+    if (S.defi && rep !== 1) return { ok: false, error: 'Mauvaise réponse : réessaie.' };
+    S.defi = false;
+    const k = Math.min(count, S.packs); S.packs -= k; S.packsOpened += k;
+    const pk = (i, r, nw) => card(i, r, { new: nw, ids: [i + 1] });
+    const packs = Array.from({ length: k }, (_, j) => [pk(10 + j, 'C', false), pk(6 + j, 'PC', j === 0), pk(14, 'R', false), pk(3 + j, j === 1 ? 'SR' : 'C', true), pk(7 + j, 'C', false)]);
+    return { ok: true, packs, wanted: k, stopped: null, error: null, me: me() };
+  },
   fusion_get: (rank, page = 0) => fusionState(rank || 'C', page),
   fusion_do: (ids, page = 0) => {
     S.fus.stock = S.fus.stock.filter((c) => !ids.includes(c.id));

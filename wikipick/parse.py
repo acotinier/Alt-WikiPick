@@ -43,8 +43,16 @@ def _to_bool(value):
     return bool(value)
 
 
+_PERSO_IMG = re.compile(r"^/perso/[A-Za-z0-9._-]{1,80}$")  # les images des cartes exclusives vivent sur wiki-pick.com, dans /perso/
+
+
 def _safe_img(img):
-    return img if isinstance(img, str) and img.startswith(_ALLOWED_IMG_HOSTS) else None
+    if not isinstance(img, str):
+        return None
+    if img.startswith(_ALLOWED_IMG_HOSTS):
+        return img
+    path = img[len("https://wiki-pick.com"):] if img.startswith("https://wiki-pick.com/") else img
+    return "https://wiki-pick.com" + path if _PERSO_IMG.match(path) else None
 
 
 def wiki_url(cid):
@@ -72,6 +80,10 @@ def expand_group(row, champs, imgp):
     ids = row[n] if len(row) > n and isinstance(row[n], list) else []
     tags = row[n + 1] if len(row) > n + 1 and isinstance(row[n + 1], list) else []
     extra = row[n + 2] if len(row) > n + 2 and isinstance(row[n + 2], dict) else {}
+    if not img:  # carte exclusive : son illustration est le média de sa mise en page personnalisée (sauf une vidéo)
+        perso = extra.get("perso")
+        if isinstance(perso, dict) and not perso.get("video"):
+            img = _safe_img(perso.get("media"))
     ids = [_to_int(i) for i in ids if _to_int(i) > 0]
     rarity = raw.get("r") or "C"
     locked = _to_bool(raw.get("locked"))
@@ -119,6 +131,20 @@ def expand_pack_card(c):
         "new": bool(c.get("isNew")),
         "url": wiki_url(c.get("cid")),
     }
+
+
+TAG_COLOR = re.compile(r"^#[0-9a-f]{6}$")
+
+
+def parse_tags(items):
+    """Étiquettes du joueur (`GET /api/tags`, `POST /api/tag/*` -> tags) : id, nom, couleur (#rrggbb), dans l'ordre choisi sur le site."""
+    out = []
+    for t in items if isinstance(items, list) else []:
+        if isinstance(t, dict) and _to_int(t.get("id")) > 0:
+            color = str(t.get("color") or "").lower()
+            out.append({"id": _to_int(t["id"]), "name": str(t.get("name") or "")[:40], "color": color if TAG_COLOR.match(color) else "#64748b",
+                        "order": _to_int(t.get("ordre"))})
+    return sorted(out, key=lambda x: (x["order"], x["id"]))
 
 
 FUSION_RANKS = ("C", "PC", "R", "SR", "UR")  # les rangs qu'on peut fusionner (les légendaires et mythiques ne se fusionnent pas)
@@ -460,8 +486,9 @@ def parse_collection(payload):
         cards = [dict(g) for g in groups]
     return {
         "cards": cards,
-        "tags": payload.get("tags") or [],
+        "tags": parse_tags(payload.get("tags")),
         "rank": payload.get("rank") or {},
+        "masked": [i for i in (_to_int(x) for x in payload.get("masquees") or []) if i > 0],  # exclusives masquées du profil (ids d'exemplaires)
     }
 
 

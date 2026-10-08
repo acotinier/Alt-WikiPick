@@ -203,6 +203,26 @@ class WikiPickClient:
         """UNE fusion (2 ou 3 cartes du même rang). Elle peut rater : les cartes sont alors perdues. Jamais rejouée."""
         return self._post_json("/api/fusion", {"ids": ids, "page": page})
 
+    def exclusive_hide(self, card_id, on):
+        """Masque (ou non) une carte exclusive sur ton profil : elle reste à toi, grisée dans ta collection."""
+        return self._post_json("/api/card/exclusive/masquer", {"card_id": card_id, "on": bool(on)})
+
+    # ---- étiquettes (lues dans cards.js) ----
+    def tags(self):
+        return self._get_json("/api/tags")
+
+    def tag_create(self, name, color):
+        return self._post_json("/api/tag/create", {"name": name, "color": color})
+
+    def tag_update(self, tag_id, name, color):
+        return self._post_json("/api/tag/update", {"id": tag_id, "name": name, "color": color})
+
+    def tag_delete(self, tag_id):
+        return self._post_json("/api/tag/delete", {"id": tag_id})
+
+    def card_tags(self, cid, tag_ids):
+        return self._post_json("/api/card/tags", {"cid": cid, "tag_ids": tag_ids})
+
     def bank(self, card_id):
         return self._post_json("/api/bank", {"card_id": card_id})
 

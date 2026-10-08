@@ -59,7 +59,7 @@ ALTWP_SECRET="une longue phrase" ALTWP_COOKIE_SECURE=0 python -m server    # htt
 
 - Une connexion temps réel par joueur **actif** : elle s'ouvre quand un navigateur écoute, se ferme 45 secondes après son départ, et l'interface la coupe quand l'onglet est caché plus de 45 s.
 - Un appel « profil » et un appel « collection » par actualisation, pas de sondage ; les enchères ne sont suivies que sur l'écran Marché.
-- Presque aucune automatisation : tout ce qui écrit part sur un clic, avec confirmation quand il engage des pièces ou des cartes. Seule exception, le lot de fusions lancé et confirmé par le joueur : une fusion à la fois (au plus une par seconde), arrêt à la moindre erreur, interrompu si l'interface ne le suit plus. L'appli ne répond jamais à la vérification du site à la place du joueur.
+- Presque aucune automatisation : tout ce qui écrit part sur un clic, avec confirmation quand il engage des pièces ou des cartes. Deux exceptions, lancées et choisies par le joueur : le lot de fusions (double confirmation, une fusion à la fois avec 0,2 s de pause, interrompu si l'interface ne le suit plus) et l'ouverture de plusieurs paquets d'un coup (20 au plus, 0,3 s entre deux). Les deux s'arrêtent à la moindre erreur sans réessayer ; jamais de réponse à la vérification du site à la place du joueur. L'appli ne répond jamais à la vérification du site à la place du joueur.
 
 ## Sauvegarde et mise à jour
 

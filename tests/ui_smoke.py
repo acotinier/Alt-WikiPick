@@ -27,6 +27,7 @@ window.__calls=[]; window.__logged=__LOGGED__; window.__cache=__CACHE__; window.
 window.__prefs=__PREFS__; window.__packs=[]; window.__watch=[]; window.__actions=[]; window.__bids={}; window.__recycled=[]; window.__bidDelay=0;
 window.__events=[]; window.__state='live'; window.__now=Math.floor(Date.now()/1000); window.__notifs=[];
 const D = __DATA__;
+window.__hidden=[]; window.__tags=D.tags.slice();
 const INFO = {odds:{M:0.1,L:0.5,UR:2,SR:8,R:30,PC:70,C:100}, bank:{C:1,PC:3,R:10,SR:40,UR:100,L:500,M:2000}, shinyOdds:0.2, perPack:5};
 const copy = (o) => JSON.parse(JSON.stringify(o));
 const cardOf = (cid, name, r) => ({cid, name, desc:'', img:null, rarity:r, reads:5000, shiny:false, copies:1, locked:false, tags:[], ids:[], url:null, new:false});
@@ -100,6 +101,15 @@ window.pywebview={api:{
  fusion_job:async()=>{const j=window.__job;if(j&&j.running){j.fusions++;j.won++;j.used+=j.size;j.new++;j.last={cid:'fr:N',name:'Dernière <b>x</b>',img:null,rarity:'PC',new:true};
    if(j.fusions>=j.goal){j.running=false;j.reason='done';}}return {ok:true,job:j||null};},
  fusion_stop:async()=>{window.__calls.push('fusion_stop');if(window.__job&&window.__job.running){window.__job.running=false;window.__job.reason='stopped';}return {ok:true};},
+ hidden_get:async()=>({ok:true,list:window.__hidden}),
+ hidden_set:async(cids,on)=>{window.__calls.push('hidden_set:'+JSON.stringify(cids)+':'+on);window.__hidden=window.__hidden.filter(c=>!cids.includes(c));if(on===true)window.__hidden.push(...cids);return {ok:true,list:window.__hidden};},
+ card_tags_set:async(cid,ids)=>{window.__calls.push('card_tags_set:'+cid+':'+JSON.stringify(ids));window.pywebview.api._w('Étiquettes');return {ok:true,tag_ids:ids};},
+ tag_save:async(id,name,color)=>{window.__calls.push('tag_save:'+JSON.stringify([id,name,color]));window.pywebview.api._w('Étiquette');
+   window.__tags=id==null?window.__tags.concat([{id:50+window.__tags.length,name:name.trim(),color}]):window.__tags.map(t=>t.id===id?Object.assign({},t,{name:name.trim(),color}):t);return {ok:true,tags:window.__tags,id:id||99};},
+ tag_delete:async(id)=>{window.__calls.push('tag_delete:'+id);window.__tags=window.__tags.filter(t=>t.id!==id);return {ok:true,tags:window.__tags};},
+ open_packs:async(count,defi,rep)=>{window.__calls.push('open_packs:'+count+':'+defi);window.pywebview.api._w('Paquets '+count);const k=Math.min(count,2);
+   const packs=Array.from({length:k},(_,j)=>[0,1,2,3,4].map(i=>Object.assign(cardOf('fr:Q'+j+i,'Paquet <b>x</b> '+j+i,i===3?'SR':'C'),{new:i===0})));
+   return {ok:true,packs,wanted:k,stopped:null,error:null,me:Object.assign({},D.me,{packs:Math.max(0,(D.me.packs||3)-k)})};},
  corbeille_get:async()=>({ok:true,price:4,minutes:20,items:[{id:801,card:cardOf('fr:D1','Recyclée 1','C'),left:600},{id:802,card:cardOf('fr:D2','Recyclée 2','R'),left:60}]}),
  corbeille_restore:async(ids,all)=>{window.__calls.push('restore:'+JSON.stringify(ids)+':'+all);return {ok:true,restored:all?2:1,cost:all?8:4};},
  corbeille_empty:async()=>{window.__calls.push('empty');return {ok:true,erased:2};},
@@ -313,8 +323,9 @@ with sync_playwright() as p:
     assert "2 messages non lus" in pg.inner_text("#bell-foot") and "1 échange en attente" in pg.inner_text("#bell-foot")
     assert pg.locator("#bell-list b").count() == 0
     pg.screenshot(path=str(out/"bell.png"))
-    pg.click("#btn-read-all"); pg.wait_for_timeout(200)
-    assert calls(pg, "read_notifications") == 1 and not pg.is_visible("#bell-n") and pg.locator(".nitem.unread").count() == 0
+    pg.wait_for_timeout(300)
+    assert calls(pg, "read_notifications") == 1 and not pg.is_visible("#bell-n"), "ouvrir la cloche suffit pour tout lire"
+    assert pg.locator(".nitem.unread").count() == 1 and pg.locator("#btn-read-all").count() == 0, "elles restent surlignées tant que le panneau est ouvert"
     assert pg.is_visible("#bell-panel")
     pg.mouse.click(3, 400); pg.wait_for_timeout(100); assert not pg.is_visible("#bell-panel"), "clic en dehors : la cloche se ferme"
 
@@ -347,6 +358,39 @@ with sync_playwright() as p:
     assert [c for c in pg.evaluate("window.__calls") if c.startswith("fusion_do")] == ["fusion_do:[7000,7001,7002]"]
     pg.wait_for_selector("#modal .card, #modal [class*=m-]"); assert "Nouvelle <b>x</b>" in pg.inner_text("#modal"), "la carte obtenue s'ouvre, son nom reste du texte"
     pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+
+    # --- plusieurs paquets d'un coup, tri par date, aperçu, cartes masquées, étiquettes
+    pg.click("[data-tab=packs]"); pg.wait_for_selector("#pk-many:not(.hidden)")
+    k = int(pg.inner_text("#many-n")); assert k >= 2 and f"{k} paquets d'un coup" in pg.inner_text("#btn-many")
+    pg.evaluate("window.__calls = []"); pg.click("#btn-many"); pg.wait_for_selector("#pk-batch:not(.hidden)", timeout=4000)
+    assert pg.evaluate("window.__calls").count(f"open_packs:{k}:undefined") == 1 or any(c.startswith("open_packs:") for c in pg.evaluate("window.__calls"))
+    assert pg.locator("#bt-grid .card").count() == 5 * min(k, 2) and "<b>x</b>" in pg.inner_text("#bt-grid") and pg.locator("#bt-grid b").count() == 0, "texte, jamais du HTML"
+    pg.click("#bt-done"); pg.wait_for_selector("#packs-idle:not(.hidden)")
+
+    pg.click("[data-tab=collection]"); pg.wait_for_timeout(300)
+    assert pg.locator("#grid .card .short").count() > 0, "l'aperçu d'une carte montre sa description courte"
+    pg.select_option("#f-sort", "recent"); pg.wait_for_timeout(300)
+    newest = max(cards, key=lambda c: max(c["ids"]))["name"]
+    assert pg.locator("#grid .card h3").first.inner_text() == newest, "le tri par date d'obtention met en tête le dernier exemplaire reçu"
+    pg.select_option("#f-sort", "rarity"); pg.wait_for_timeout(200)
+    count = lambda: int("".join(ch for ch in pg.inner_text("#f-count") if ch.isdigit()))
+    before = count()
+    pg.locator("#grid .card").nth(1).click(); pg.wait_for_selector("#modal:not(.hidden) .tgc")
+    pg.evaluate("window.__calls = []")
+    pg.locator("#modal .tgc[data-tag]").first.click(); pg.wait_for_timeout(400)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("card_tags_set:")], "poser une étiquette part au serveur"
+    pg.wait_for_selector("#modal:not(.hidden) .tgc")
+    pg.click("text=Masquer de ma collection"); pg.wait_for_timeout(400)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("hidden_set:") and c.endswith(":true")] and not pg.is_visible("#modal")
+    assert count() == before - 1, "une carte masquée quitte la collection"
+    pg.check("#f-hidden"); pg.wait_for_timeout(300); assert count() == 1, "le filtre n'affiche que les cartes masquées"
+    pg.locator("#grid .card").first.click(); pg.wait_for_selector("#modal:not(.hidden)"); pg.click("text=Réafficher dans ma collection"); pg.wait_for_timeout(400)
+    pg.uncheck("#f-hidden"); pg.wait_for_timeout(300); assert count() == before, "réaffichée, la carte revient"
+    pg.click("#btn-tags"); pg.wait_for_selector(".tagmgr-new input")
+    pg.fill(".tagmgr-new input", "Mes <b>favoris</b>"); pg.click("text=Créer l'étiquette"); pg.wait_for_timeout(400)
+    assert any(c.startswith('tag_save:[null,"Mes <b>favoris</b>"') for c in pg.evaluate("window.__calls")) and pg.locator(".tagmgr-list li").count() >= 2
+    assert pg.locator(".tagmgr b").count() == 0 and "Mes <b>favoris</b>" in pg.inner_text("#f-tag"), "le nom d'une étiquette reste du texte"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
 
     # --- marché en direct (lecture seule)
     pg.click("[data-tab=market]"); pg.wait_for_timeout(500)
@@ -475,7 +519,7 @@ with sync_playwright() as p:
     pg.click("#btn-bell"); pg.wait_for_timeout(200)
     assert "vient d'être mise aux enchères" in pg.locator("#bell-list .nitem").first.inner_text(); pg.mouse.click(3, 400)
     pg.evaluate("window.__events.push(%s)" % json.dumps({"event": "auction", "data": {"what": "new", "id": 100, "cid": "fr:Autre"}})); pg.wait_for_timeout(1300)
-    assert pg.evaluate("LV.localUnread") == 1, "une carte non surveillée ne déclenche rien"
+    assert pg.evaluate("LV.localUnread") == 0, "une carte non surveillée ne déclenche rien (et la cloche ouverte avait tout lu)"
     pg.click("[data-tab=market]"); pg.wait_for_timeout(300)
     assert pg.inner_text("#m-watch-n") == "1"; pg.click("#m-watch"); assert pg.is_visible("#watch-panel") and pg.locator("#watch-list .nitem.watch").count() == 1
     pg.click("#watch-list >> text=Voir sur le marché"); pg.wait_for_timeout(500)

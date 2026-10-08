@@ -19,6 +19,9 @@
   let loading = $state(false), history = $state(false), sum = $state(0), seq = 0, priceEdit = $state({});
   const setQ = debounce((v) => (q = v.trim()), 350);
   const more = $derived(page + 1 < pages);
+  let view = $state('grid');
+  call('prefs_get').then((r) => { if (r && r.ok && r.prefs.market_view === 'list') view = 'list'; });
+  const setView = (v) => { view = v; call('prefs_set', 'market_view', v); };
 
   // le flux ne transmet les enchères que pendant que le marché est à l'écran
   $effect(() => { call('stream_watch_market', true); return () => { call('stream_watch_market', false); }; });
@@ -81,6 +84,18 @@
   const toggle = (r) => (rars = rars.includes(r) ? rars.filter((x) => x !== r) : [...rars, r]);
 </script>
 
+{#snippet acts(a)}
+        {#if !a.hist && a.status === 'live'}
+          {#if a.mine}
+            <div class="acts"><ConfirmButton small variant="danger" label="Annuler la vente" confirm="Confirmer l'annulation" onconfirm={() => cancel(a)} />
+              {#if !a.bids}<div class="pe"><input class="field" type="number" inputmode="numeric" min="1" placeholder={String(a.price)} bind:value={priceEdit[a.id]} aria-label="Nouveau prix de départ" />
+                <ConfirmButton small label="Changer" check={() => (Math.floor(Number(priceEdit[a.id])) < 1 ? "Indique une mise de départ d'au moins 1 Wikiki." : '')} onconfirm={() => reprice(a)} /></div>{/if}</div>
+          {:else if !a.leading && a.min > 0}
+            <ConfirmButton small block variant="bid" label={`Miser ${fmt(a.min)}`} confirm={`Confirmer : miser ${fmt(a.min)} Wikiki`} onconfirm={() => bid(a)} />
+          {/if}
+        {/if}
+{/snippet}
+
 <div class="scopes"><Seg items={SCOPES} value={scope} onchange={(s) => (scope = s)} /></div>
 
 {#if scope === 'live'}
@@ -93,7 +108,8 @@
 
 <p class="count muted">{loading && !items.length ? 'Chargement…' : history ? `${plural(total, scope === 'ventes' ? 'vente' : 'achat')}${sum ? ` · ${fmt(sum)} Wikiki` : ''}` : `${fmt(items.length)} affichées sur ${fmt(total)}`}</p>
 
-<div class="grid">
+<div class="vw"><button class:on={view === 'grid'} aria-label="Vue en grille" onclick={() => setView('grid')}><Icon name="grid" /></button><button class:on={view === 'list'} aria-label="Vue en liste" onclick={() => setView('list')}><Icon name="list" /></button></div>
+<div class={view === 'list' ? 'lrows' : 'grid'}>
   {#if loading && !items.length}
     {#each Array(6) as _}<div class="skeleton sk"></div>{/each}
   {:else if !items.length}
@@ -101,6 +117,23 @@
   {:else}
     {#each items as a (a.id)}
       {@const c = cardOf(a)}{@const fini = a.status !== 'live' && !a.hist}
+      {#if view === 'list'}
+      <article class="lrow" class:fini class:lead={a.leading}>
+        {#if c}<div class="th"><Card card={c} mini onclick={() => openCard(a.card || a.lot.cards[0])} /></div>{/if}
+        <div class="mid">
+          <b class="nm serif">{c ? c.name : ''}</b>
+          <small class="muted">{c ? app.names[c.rarity] || c.rarity : ''}{a.lot ? ` · lot de ${plural(a.lot.n || a.lot.cards.length, 'carte')}` : ''} · {a.hist ? stateOf(a) : a.bids ? (fini ? '' : 'en tête : ') + (a.leader || a.seller) : 'par ' + a.seller}</small>
+          {#if !a.hist && stateOf(a)}<small class="st">{stateOf(a)}</small>{/if}
+        </div>
+        <div class="rt">
+          <span class="price serif num"><Icon name="coin" />{fmt(a.price)}</span>
+          {#if a.hist}<span class="pill">{new Date(a.hist.ts * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+          {:else if fini}<span class="pill">Terminé</span>
+          {:else}<span class="pill timer" class:hot={secs(a) <= 15}>{secs(a) > 0 ? clock(secs(a)) : 'Clôture…'}</span>{/if}
+        </div>
+        {#if !a.hist && a.status === 'live'}<div class="la">{@render acts(a)}</div>{/if}
+      </article>
+      {:else}
       <article class="offer" class:fini class:lead={a.leading}>
         {#if c}<Card card={c} onclick={() => openCard(a.card || a.lot.cards[0])}>{#if a.lot}<span class="lot">Lot de {plural(a.lot.n || a.lot.cards.length, 'carte')}</span>{/if}</Card>{/if}
         <div class="deal">
@@ -111,16 +144,9 @@
           {:else}<span class="pill timer" class:hot={secs(a) <= 15}>{secs(a) > 0 ? clock(secs(a)) : 'Clôture…'}</span>{/if}
         </div>
         {#if !a.hist && stateOf(a)}<p class="st">{stateOf(a)}</p>{/if}
-        {#if !a.hist && a.status === 'live'}
-          {#if a.mine}
-            <div class="acts"><ConfirmButton small variant="danger" label="Annuler la vente" confirm="Confirmer l'annulation" onconfirm={() => cancel(a)} />
-              {#if !a.bids}<div class="pe"><input class="field" type="number" inputmode="numeric" min="1" placeholder={String(a.price)} bind:value={priceEdit[a.id]} aria-label="Nouveau prix de départ" />
-                <ConfirmButton small label="Changer" check={() => (Math.floor(Number(priceEdit[a.id])) < 1 ? "Indique une mise de départ d'au moins 1 Wikiki." : '')} onconfirm={() => reprice(a)} /></div>{/if}</div>
-          {:else if !a.leading && a.min > 0}
-            <ConfirmButton small block variant="bid" label={`Miser ${fmt(a.min)}`} confirm={`Confirmer : miser ${fmt(a.min)} Wikiki`} onconfirm={() => bid(a)} />
-          {/if}
-        {/if}
+        {@render acts(a)}
       </article>
+      {/if}
     {/each}
   {/if}
 </div>
@@ -151,6 +177,15 @@
   @keyframes hot { 50% { box-shadow: 0 0 14px -2px var(--bad); } }
   .st { padding: 0 2px; font-size: 12.5px; font-weight: 600; color: var(--ivory); } .lead .st { color: var(--good); }
   .acts { display: grid; gap: 6px; } .pe { display: flex; gap: 6px; } .pe .field { min-height: 34px; padding: 0 8px; width: 0; flex: 1; font-size: 14px; }
+  .vw { display: flex; justify-content: flex-end; gap: 2px; margin: 10px 0 -6px; }
+  .vw button { display: grid; place-items: center; width: 38px; height: 34px; color: var(--muted); font-size: 18px; background: none; border: 1px solid transparent; border-radius: 9px; cursor: pointer; }
+  .vw button.on { color: var(--text); background: var(--ink-3); border-color: var(--line); }
+  .lrows { display: grid; gap: 8px; }
+  .lrow { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 10px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 12px; transition: opacity .35s; }
+  .lrow.fini { opacity: .55; } .lrow.lead { border-color: color-mix(in srgb, var(--good) 40%, transparent); }
+  .lrow .th { width: 46px; } .lrow .mid { display: grid; gap: 1px; min-width: 0; } .lrow .nm { font-size: 15px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lrow small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lrow .st { font-weight: 600; color: var(--ivory); } .lrow.lead .st { color: var(--good); }
+  .lrow .rt { display: grid; justify-items: end; gap: 3px; } .lrow .price { font-size: 17px; } .lrow .la { grid-column: 1 / -1; }
   .sentinel { height: 1px; }
   @media (min-width: 700px) { .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 22px 16px; } }
 </style>

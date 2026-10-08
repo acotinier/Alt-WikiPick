@@ -16,6 +16,7 @@
   import Notifications from './parts/Notifications.svelte';
   import AccountMenu from './parts/AccountMenu.svelte';
   import TradeComposer from './parts/TradeComposer.svelte';
+  import TagManager from './parts/TagManager.svelte';
 
   const VIEWS = {
     collection: () => import('./routes/Collection.svelte'),
@@ -137,6 +138,7 @@
   <Notifications />
   <AccountMenu />
   <TradeComposer />
+  <TagManager />
 {/if}
 <Toasts />
 

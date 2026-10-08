@@ -3,7 +3,7 @@
   // et les actions (chacune demande une confirmation quand elle engage des pièces ou des cartes).
   import { call } from '../lib/api.js';
   import { EXCLUSIVE, ago, clock, color, fmt, plural, wikiUrl } from '../lib/format.js';
-  import { app, coll, collectionChanged, nowSrv, refreshMeSoon, run, toast, ui, watch } from '../lib/store.svelte.js';
+  import { app, coll, collectionChanged, hidden, nowSrv, refreshMeSoon, run, setCardTags, setHidden, toast, ui, watch } from '../lib/store.svelte.js';
   import { tick } from '../lib/ticker.svelte.js';
   import Card from '../ui/Card.svelte';
   import ConfirmButton from '../ui/ConfirmButton.svelte';
@@ -20,6 +20,14 @@
   const url = $derived(card && (card.url || wikiUrl(card.cid)));
   const watched = $derived(!!(card && watch.list.some((w) => w.cid === card.cid)));
   const tagNames = $derived(own ? (own.tags || []).map((id) => (coll.tags.find((t) => t.id === id) || {}).name).filter(Boolean) : []);
+
+  const exId = $derived(own && own.ids && own.ids.length ? own.ids[0] : null);
+  const masked = $derived(exId != null && coll.masked.includes(exId));
+  const toggleMask = () => { const was = masked, id = exId; return run(() => call('exclusive_hide', id, !was), () => { coll.masked = was ? coll.masked.filter((i) => i !== id) : [...coll.masked, id]; toast(was ? 'Carte de nouveau visible sur ton profil.' : "Carte masquée : elle n'apparaît plus sur ton profil.", 'good'); }); };
+  const myTags = $derived(own ? own.tags || [] : []);
+  const isHidden = $derived(!!card && hidden.set.has(card.cid));
+  const toggleTag = (t) => { const ids = myTags.includes(t.id) ? myTags.filter((i) => i !== t.id) : [...myTags, t.id]; return run(() => call('card_tags_set', card.cid, ids), () => setCardTags(card.cid, ids)); };
+  const toggleHidden = () => { const was = isHidden; return run(() => call('hidden_set', [card.cid], !was), (r) => { setHidden(r.list); toast(was ? 'La carte est de nouveau dans ta collection.' : 'Carte masquée : elle reste à toi, mais disparaît de ta collection.', 'good'); }); };
 
   let d = $state(null), loading = $state(false), open = $state(false), start = $state(10), dur = $state('10m');
   $effect(() => { if (c) { d = null; open = false; load(c.cid); } });
@@ -89,6 +97,16 @@
 
           {#if d.mine.length}
             <section class="box">
+              <h3 class="eyebrow">Étiquettes</h3>
+              <div class="tg">
+                {#each coll.tags as t (t.id)}<button class="tgc" class:on={myTags.includes(t.id)} style:--t={t.color} onclick={() => toggleTag(t)}>{t.name}</button>{/each}
+                <button class="tgc add" onclick={() => (ui.tags = true)}>{coll.tags.length ? 'Gérer' : 'Créer une étiquette'}</button>
+              </div>
+            </section>
+          {/if}
+
+          {#if d.mine.length}
+            <section class="box">
               <h3 class="eyebrow">Actions</h3>
               {#if exclusive}<p class="muted">Carte exclusive : elle ne se vend pas, ne se recycle pas et ne s'échange pas.</p>{/if}
               <div class="row">
@@ -98,6 +116,8 @@
                   <ConfirmButton small label={free[0].for_sale ? 'Retirer des cartes à vendre' : 'Mettre de côté pour la vente'} onconfirm={() => setAside(!free[0].for_sale)} />
                 {/if}
                 {#if locked.length}<ConfirmButton small label="Déverrouiller" onconfirm={() => lock(false)} />{/if}
+                {#if exclusive && exId != null}<button class="btn small" onclick={toggleMask}>{masked ? 'Démasquer de mon profil' : 'Masquer de mon profil'}</button>{/if}
+                <button class="btn small" onclick={toggleHidden}>{isHidden ? 'Réafficher dans ma collection' : 'Masquer de ma collection'}</button>
                 <ConfirmButton small label={d.wished ? 'Retirer de mes souhaits' : 'Ajouter à mes souhaits'} onconfirm={() => wish(!d.wished)} />
               </div>
               {#if free.length && !exclusive}
@@ -156,6 +176,11 @@
   .auct label { display: grid; gap: 4px; flex: 1; font-size: 12.5px; color: var(--muted); }
   .nowrap { flex-wrap: nowrap; align-items: end; }
   .fine { font-size: 12.5px; }
+  .tg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tgc { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 12px; color: var(--muted); font: 500 13.5px var(--sans); cursor: pointer; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); border-radius: 99px; }
+  .tgc::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--t); }
+  .tgc.on { color: var(--text); border-color: var(--t); background: color-mix(in srgb, var(--t) 18%, transparent); }
+  .tgc.add { border-style: dashed; } .tgc.add::before { display: none; }
   .extract { font: 400 16px/1.6 var(--serif); color: #d7dce5; display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
   .extract.open { -webkit-line-clamp: unset; }
   .link { justify-self: start; padding: 0; background: none; border: 0; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

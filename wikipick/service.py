@@ -5,6 +5,7 @@ ni fenêtre, ni navigateur, ni HTTP entrant.
 """
 import json
 import os
+import re
 import threading
 import time
 from pathlib import Path
@@ -14,7 +15,7 @@ from .export import collection_csv
 from .live import LiveStream
 from .parse import (FUSION_RANKS, compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
                     parse_combat_info, parse_corbeille, parse_decks, parse_defi, parse_duel, parse_friends, parse_fusion, parse_history,
-                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
+                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_tags, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
 from .social import (parse_achievements, parse_claim, parse_conversations, parse_friend_lists, parse_guild, parse_guilds,
                      parse_player_cards, parse_profile, parse_rewards_state, parse_thread, parse_user_search)
 from .store import JsonStore
@@ -23,16 +24,21 @@ PACK_HISTORY_MAX = 300  # paquets gardés dans le journal local
 WATCH_MAX = 200  # cartes surveillées au plus
 ACTIONS_MAX = 200  # actions gardées dans le journal local
 ACTIONS_MAX = 200  # actions gardées dans le journal local
-FUSION_PAUSE = 1.0  # secondes entre deux fusions d'un lot (le site, lui, anime chaque fusion pendant plus de deux secondes)
+FUSION_PAUSE = 0.2  # secondes entre deux fusions d'un lot
 FUSION_DEADMAN = 90  # un lot s'arrête si l'interface n'est pas venue voir où il en est depuis ce nombre de secondes
 FUSION_MAX_CARDS = 20000  # cartes consommées au plus par lot
+FUSION_MAX_CARDS = 20000  # cartes consommées au plus par lot
+PACKS_BATCH_MAX = 20  # paquets ouverts au plus d'un coup
+PACK_PAUSE = 0.3  # secondes entre deux paquets d'un lot
+HIDDEN_MAX = 5000  # cartes masquées au plus
+TAG_COLOR = re.compile(r"^#[0-9a-f]{6}$")
 AUCTION_DURATIONS = ("10m", "30m", "1h", "6h", "12h", "24h")  # celles du site
 # Préférences : seules ces clés et ces valeurs sont acceptées (l'interface ne peut rien écrire d'autre)
 PREF_BOOLS = ("sound",)
 PREF_CHOICES = {
     "market_view": ("grid", "dense", "list"),
     "market_sort": ("fin", "rarete", "prixbas", "prix", "mises", "lectures", "nom"),
-    "collection_sort": ("rarity", "reads", "name", "copies"),
+    "collection_sort": ("rarity", "reads", "name", "copies", "recent"),
 }
 
 
@@ -70,8 +76,15 @@ def _ids(v, name, limit):
     return [_num(i, name) for i in v]
 
 
+_PERSO_CID = re.compile(r"^perso-[0-9]{1,9}$")  # les cartes exclusives n'ont pas d'article : perso-1, perso-2...
+
+
+def _is_cid(v):
+    return isinstance(v, str) and (bool(_PERSO_CID.match(v)) or (2 < len(v) <= 300 and ":" in v and v.split(":", 1)[0].isalpha()))
+
+
 def _cid(v):
-    if not (isinstance(v, str) and 2 < len(v) <= 300 and ":" in v and v.split(":", 1)[0].isalpha()):
+    if not _is_cid(v):
         raise ApiError("Carte inconnue.")
     return v
 
@@ -110,6 +123,7 @@ class Service:
         self._prefs = JsonStore(self._dir / "prefs.json", {})
         self._packs = JsonStore(self._dir / "packs_history.json", [])  # journal local des paquets ouverts ici
         self._watch = JsonStore(self._dir / "watch.json", [])  # cartes surveillées : [{cid, name}]
+        self._hidden = JsonStore(self._dir / "hidden.json", [])  # cartes masquées de la collection (local) : [cid]
         # journal de diagnostic du flux : noms d'événements et de champs seulement, jamais de valeurs
         self._live = LiveStream(self._client, lambda: self._me.get("id"), self._dir / "stream_debug.log")
         self._live.watch_cids = frozenset(w["cid"] for w in self._clean_watch(self._watch.read()))
@@ -183,6 +197,7 @@ class Service:
             out = {
                 "rank": parsed["rank"],
                 "tags": parsed["tags"],
+                "masked": parsed["masked"],
                 "cards": parsed["cards"],
                 "stats": compute_stats(parsed["cards"], self._names),
             }
@@ -231,6 +246,58 @@ class Service:
         try:
             out = self._guard(run)
             self._log_action("Paquet ouvert", out)
+            return out
+        finally:
+            self._pack_lock.release()
+
+    def open_packs(self, count, defi_id=None, rep=None):
+        """Plusieurs paquets d'affilée, nombre choisi par le joueur (PACKS_BATCH_MAX au plus). S'arrête au premier souci : plus de paquet,
+        erreur (les paquets déjà ouverts sont rendus quand même), ou vérification du site (`stopped: "challenge"`) : on ne répond jamais à
+        sa place, l'interface pose la question au joueur."""
+        if not self._pack_lock.acquire(blocking=False):
+            return {"ok": False, "error": "Une ouverture est déjà en cours."}
+
+        def run():
+            want = _num(count, "Nombre de paquets", 1, PACKS_BATCH_MAX)
+            _, me = self._state()
+            have = _to_int(me.get("packs"))
+            if have < 1:
+                return {"ok": False, "error": "Plus de paquet en réserve : le prochain arrive bientôt."}
+            want = min(want, have)
+            proof = None
+            if me.get("defi"):
+                if defi_id is None:
+                    return {"ok": False, "challenge": True, "error": "Le site demande une petite vérification avant d'ouvrir tes paquets."}
+                if not (isinstance(defi_id, str) and 0 < len(defi_id) <= 64 and defi_id.replace("-", "").replace("_", "").isalnum()):
+                    raise ApiError("Vérification invalide : recommence.")
+                proof = {"defi": defi_id, "rep": _num(rep, "Réponse", 0, 11)}
+            packs, stopped, error, last_me = [], None, None, me
+            for i in range(want):
+                try:
+                    d = self._client.open_pack(proof if i == 0 else None) or {}
+                except (ApiError, SessionExpired) as e:
+                    if not packs:
+                        raise
+                    stopped, error = "error", str(e)
+                    break
+                self._seen_ts = ((d.get("me") or {}).get("revoirTs") or {}).get("normal")
+                self._seen_genre = "normal"
+                cards = [expand_pack_card(c) for c in d.get("cards") or [] if isinstance(c, dict)]
+                self._record_pack(cards)
+                packs.append(cards)
+                last_me = d.get("me") or last_me
+                if i + 1 < want:
+                    if last_me.get("defi"):
+                        stopped = "challenge"  # le site veut une vérification : on s'arrête, c'est au joueur d'y répondre
+                        break
+                    if _to_int(last_me.get("packs")) < 1:
+                        stopped = "empty"
+                        break
+                    time.sleep(PACK_PAUSE)
+            return {"ok": True, "packs": packs, "wanted": want, "stopped": stopped, "error": error, "me": safe_me(last_me, None)}
+        try:
+            out = self._guard(run)
+            self._log_action(f"{len(out.get('packs') or [])} paquet(s) ouverts d'un coup" if out.get("ok") else "Ouverture de plusieurs paquets", out)
             return out
         finally:
             self._pack_lock.release()
@@ -517,7 +584,7 @@ class Service:
         return self._write(f"Fusion de {len(ids) if isinstance(ids, list) else '?'} cartes", run)
 
     def fusion_start(self, rank, count, size=3, dups_only=True):
-        """Lot de fusions : jusqu'à `count` cartes d'un rang, `size` par fusion, une fusion à la fois, au plus une par seconde.
+        """Lot de fusions : jusqu'à `count` cartes d'un rang, `size` par fusion, une fusion à la fois, avec une courte pause (FUSION_PAUSE, 0,2 s) entre deux.
         Lancé et confirmé par le joueur ; il s'arrête à l'objectif, s'il n'y a plus de cartes éligibles, à la moindre erreur
         (jamais de nouvel essai), sur fusion_stop(), ou si l'interface ne vient plus voir (FUSION_DEADMAN). Pendant le lot,
         aucune autre écriture n'est possible. `dups_only` : n'utilise que des doublons (il reste toujours un exemplaire)."""
@@ -608,6 +675,76 @@ class Service:
     def fusion_stop(self):
         self._fusion_halt.set()
         return {"ok": True}
+
+    # ---- étiquettes : créer, renommer, supprimer, poser sur une carte (lues dans cards.js, jamais observées en vrai) ----
+    def tags_get(self):
+        return self._guard(lambda: {"ok": True, "tags": parse_tags((self._client.tags() or {}).get("tags"))})
+
+    def tag_save(self, tag_id, name, color):
+        """Crée (tag_id = None) ou modifie une étiquette : nom de 1 à 20 caractères, couleur #rrggbb."""
+        def run():
+            nm = " ".join(str(name).split()) if isinstance(name, str) else ""
+            if not 1 <= len(nm) <= 20:
+                raise ApiError("Le nom d'une étiquette fait de 1 à 20 caractères.")
+            col = color.lower() if isinstance(color, str) else ""
+            if not TAG_COLOR.match(col):
+                raise ApiError("Couleur invalide.")
+            if tag_id is None:
+                r = self._client.tag_create(nm, col) or {}
+            else:
+                r = self._client.tag_update(_num(tag_id, "Étiquette"), nm, col) or {}
+            return {"ok": True, "tags": parse_tags(r.get("tags")), "id": _to_int(r.get("id")) or None}
+        return self._write("Étiquette créée" if tag_id is None else "Étiquette modifiée", run)
+
+    def tag_delete(self, tag_id):
+        def run():
+            r = self._client.tag_delete(_num(tag_id, "Étiquette")) or {}
+            return {"ok": True, "tags": parse_tags(r.get("tags"))}
+        return self._write("Étiquette supprimée", run)
+
+    def card_tags_set(self, cid, tag_ids):
+        """Les étiquettes d'une carte, d'un coup (la liste complète, comme le site)."""
+        def run():
+            ids = _ids(tag_ids, "Étiquettes", 50)
+            if len(set(ids)) != len(ids):
+                raise ApiError("Étiquettes en double.")
+            self._client.card_tags(_cid(cid), ids)
+            return {"ok": True, "tag_ids": ids}
+        return self._write("Étiquettes d'une carte modifiées", run)
+
+    def exclusive_hide(self, card_id, on):
+        """Masque (ou non) une de tes cartes EXCLUSIVES sur ton profil (côté site) : elle reste à toi, grisée dans ta collection."""
+        def run():
+            self._client.exclusive_hide(_num(card_id, "Carte"), on is True)
+            return {"ok": True, "masked": on is True}
+        return self._write("Carte exclusive masquée du profil" if on is True else "Carte exclusive de nouveau visible sur le profil", run)
+
+    # ---- cartes masquées : une préférence d'affichage locale, rien n'est écrit sur le site ----
+    def hidden_get(self):
+        return {"ok": True, "list": self._clean_hidden(self._hidden.read())}
+
+    @staticmethod
+    def _clean_hidden(items):
+        seen, out = set(), []
+        for c in items if isinstance(items, list) else []:
+            if _is_cid(c) and c not in seen:
+                seen.add(c)
+                out.append(c)
+        return out[:HIDDEN_MAX]
+
+    def hidden_set(self, cids, on):
+        """Masque (on = True) ou ré-affiche des cartes dans TA collection. Elles restent à toi."""
+        if not isinstance(cids, list) or len(cids) > 500 or not all(isinstance(c, str) for c in cids):
+            return {"ok": False, "error": "Cartes invalides."}
+        cur = self._clean_hidden(self._hidden.read())
+        bad = set(cids) - set(self._clean_hidden(cids))
+        if bad:
+            return {"ok": False, "error": "Carte inconnue."}
+        keep = [c for c in cur if c not in cids] + (self._clean_hidden(cids) if on is True else [])
+        if len(keep) > HIDDEN_MAX:
+            return {"ok": False, "error": f"Tu as déjà masqué {HIDDEN_MAX} cartes."}
+        self._hidden.write(keep)
+        return {"ok": True, "list": keep}
 
     def corbeille_get(self):
         return self._guard(lambda: {"ok": True, **parse_corbeille(self._client.corbeille() or {})})

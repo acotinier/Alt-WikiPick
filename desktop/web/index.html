@@ -148,7 +148,7 @@
     </div>
 
     <div id="bell-panel" class="panel hidden" role="dialog" aria-label="Notifications">
-      <div class="panel-head"><h2>Notifications</h2><button id="btn-read-all" class="btn small ghost">Tout marquer comme lu</button></div>
+      <div class="panel-head"><h2>Notifications</h2></div>
       <div id="bell-list" class="nlist"></div>
       <p id="bell-foot" class="panel-foot"></p>
     </div>
@@ -158,12 +158,15 @@
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="f-search" type="search" placeholder="Rechercher une carte" autocomplete="off"></label>
         <select id="f-sort" aria-label="Trier">
           <option value="rarity">Trier par rareté</option>
+          <option value="recent">Trier par date d'obtention</option>
           <option value="reads">Trier par lectures</option>
           <option value="name">Trier par nom</option>
           <option value="copies">Trier par exemplaires</option>
         </select>
         <select id="f-tag" aria-label="Filtrer par tag"><option value="">Tous les tags</option></select>
         <label class="check"><input id="f-dups" type="checkbox"> Doublons seulement</label>
+        <label class="check"><input id="f-hidden" type="checkbox"> Masquées seulement</label>
+        <button id="btn-tags" class="btn small ghost">Étiquettes</button>
         <span id="f-count" class="count"></span>
       </div>
       <div id="f-rarities" class="rarities"></div>
@@ -189,6 +192,18 @@
           <button id="btn-open" class="btn primary big">Ouvrir un paquet</button>
           <button id="btn-gold" class="btn gold big hidden"></button>
         </div>
+        <div id="pk-many" class="pk-many hidden">
+          <div class="stepper"><button id="many-minus" aria-label="Moins">−</button><b id="many-n">3</b><button id="many-plus" aria-label="Plus">+</button></div>
+          <button id="btn-many" class="btn big">Ouvrir 3 paquets d'un coup</button>
+        </div>
+      </div>
+
+      <div id="pk-batch" class="pk-batch hidden">
+        <h2 id="bt-title" class="serif"></h2>
+        <p id="bt-sum" class="muted"></p>
+        <p id="bt-note" class="note hidden"></p>
+        <div id="bt-grid" class="grid bgrid"></div>
+        <button id="bt-done" class="btn primary">Terminer</button>
       </div>
 
       <div id="reveal" class="reveal hidden">
@@ -355,6 +370,7 @@
 <script src="community.js"></script>
 <script src="rewards.js"></script>
 <script src="fusion.js"></script>
+<script src="tags.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

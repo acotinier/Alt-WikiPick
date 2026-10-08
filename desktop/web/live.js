@@ -41,7 +41,7 @@ function startLive() {
   if (LV.timer) return;
   api().start_stream(); resumeArena();
   LV.timer = setInterval(pollLive, 1000);
-  loadNotifs(); loadWatch();
+  loadNotifs(); loadWatch(); loadHidden();
 }
 function stopLive() {
   clearInterval(LV.timer); LV.timer = null; LV.ever = false; LV.notifs = []; LV.local = []; LV.localUnread = 0; LV.market.items = []; LV.watching = false;
@@ -122,8 +122,17 @@ async function toggleBell() {
   if (!p.classList.contains("hidden")) return closeBell();
   p.classList.remove("hidden"); renderNotifs();
   await loadNotifs();
+  LV.localUnread = 0; renderBell(); // les alertes locales (cartes surveillées) sont vues aussi
+  if (LV.notifs.some((n) => !n.read)) autoRead(); // comme sur le site : ouvrir la cloche = lire
 }
-async function markAllRead() { // action manuelle : un clic = « tout marquer comme lu », comme sur le site
+async function autoRead() { // les notifications restent surlignées tant que le panneau est ouvert ; le compteur tombe à zéro
+  const r = await api().read_notifications();
+  if (r.expired) return sessionLost(r);
+  if (!r.ok) return;
+  LV.localUnread = 0; if (S.data) S.data.me.unread = 0;
+  renderBell();
+}
+async function markAllRead() { // plus de bouton : ouvrir la cloche suffit (autoRead)
   const r = await api().read_notifications();
   if (r.expired) return sessionLost(r);
   if (!r.ok) return toast(r.error || "Impossible de marquer comme lu");
@@ -371,7 +380,6 @@ function resetMarketFilters() {
 
 function bindLive() {
   $("btn-bell").onclick = (e) => { e.stopPropagation(); toggleBell(); };
-  $("btn-read-all").onclick = markAllRead;
   document.addEventListener("click", (e) => {
     const p = $("bell-panel");
     if (!p.classList.contains("hidden") && !p.contains(e.target) && !$("btn-bell").contains(e.target)) closeBell();

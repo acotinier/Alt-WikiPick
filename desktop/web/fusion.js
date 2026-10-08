@@ -1,6 +1,6 @@
 "use strict";
 /* Fusion : 2 ou 3 cartes du même rang -> une carte du rang au-dessus, ou toutes sont perdues. Lot automatique : une double
-   confirmation (bouton armé), puis le serveur local fait UNE fusion à la fois (environ une par seconde) jusqu'à l'objectif ; il
+   confirmation (bouton armé), puis le serveur local fait UNE fusion à la fois (0,2 s de pause entre deux) jusqu'à l'objectif ; il
    s'arrête à la moindre erreur, sur « Arrêter », ou si cette page ne vient plus voir où il en est (le sondage ci-dessous le garde en vie).
    Chargé AVANT app.js : rien ne s'exécute ici au chargement. */
 
@@ -56,7 +56,7 @@ function fuHelp() {
       el("li", { text: "Les cartes verrouillées, chromatiques ou exclusives ne se fusionnent pas et n'apparaissent pas ici." }),
       el("li", { text: "Les légendaires ne se fusionnent pas ; les mythiques ne se trouvent que dans les paquets." }),
       el("li", { text: "Les cartes consommées comptent comme recyclées pour les défis de recyclage." }),
-      el("li", { text: "Fusion automatique : une fusion à la fois, environ une par seconde, jusqu'au nombre de cartes choisi. Elle s'arrête si tu l'arrêtes, s'il n'y a plus de cartes éligibles ou à la moindre erreur. Avec « Doublons seulement », seuls les exemplaires en trop sont utilisés." }))));
+      el("li", { text: "Fusion automatique : une fusion à la fois, à la suite, jusqu'au nombre de cartes choisi. Elle s'arrête si tu l'arrêtes, s'il n'y a plus de cartes éligibles ou à la moindre erreur. Avec « Doublons seulement », seuls les exemplaires en trop sont utilisés." }))));
 }
 
 function fuTally(job) {
@@ -95,7 +95,7 @@ function paintFusion() {
     const sum = el("p", { class: "fu-sum" });
     const paintSum = () => {
       const f = fusions();
-      sum.replaceChildren(`${plural(f, "fusion")} · ${plural(consumed(), "carte")} utilisées · environ ${Math.max(1, Math.ceil(f * 1.4 / 60))} min`, el("br"),
+      sum.replaceChildren(`${plural(f, "fusion")} · ${plural(consumed(), "carte")} utilisées · environ ${Math.max(1, Math.ceil(f * 0.7 / 60))} min`, el("br"),
         el("span", { class: "muted", text: (FU.dups ? "Il te reste toujours un exemplaire de chaque carte." : "Tes cartes en un seul exemplaire peuvent partir.") + " Une fusion ratée perd ses cartes." }));
     };
     const input = el("input", { type: "number", min: String(FU.size), max: String(avail), step: String(FU.size), value: String(FU.count), "aria-label": "Cartes à fusionner" });

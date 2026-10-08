@@ -90,10 +90,52 @@ with sync_playwright() as p:
     assert len(calls(pg, "recycle")) == 1 and "Carte recyclée" in pg.inner_text(".toasts")
     pg.keyboard.press("Escape"); pg.wait_for_timeout(200); assert not pg.is_visible("[role=dialog]"), "Échap ferme la fiche"
 
+    # ---- aperçu : la description courte ; tri par date d'obtention ; étiquettes ; cartes masquées
+    assert pg.locator(".g .card .short").count() > 0, "l'aperçu d'une carte montre sa description courte"
+    pg.click("button.filt"); pg.wait_for_selector("[role=dialog]")
+    pg.select_option("[role=dialog] select >> nth=0", "recent"); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(400)
+    assert calls(pg, "prefs_set")[-1][1:] == ["collection_sort", "recent"]
+    pg.evaluate("window.scrollTo(0, 0)"); pg.wait_for_timeout(300)
+    first = pg.locator(".g .card .name").first.inner_text()
+    last_card = pg.evaluate("(() => { const c = window.__mock.cards.reduce((a, b) => (Math.max(...b.ids) > Math.max(...a.ids) ? b : a)); return c.name; })()")
+    assert first == last_card, "le tri par date d'obtention met en tête le dernier exemplaire reçu : " + first + " / " + last_card
+    pg.click("button.filt"); pg.select_option("[role=dialog] select >> nth=0", "rarity"); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    pg.fill("input[type=search]", "joconde"); pg.wait_for_timeout(500)
+    pg.get_by_role("button", name="La Joconde", exact=True).first.click(); pg.wait_for_selector("[role=dialog] .extract")
+    pg.evaluate("window.__calls = []")
+    pg.locator("[role=dialog] .tgc", has_text="À échanger").click(); pg.wait_for_timeout(300)
+    assert calls(pg, "card_tags_set")[-1][2] in ([7, 8], [8]), calls(pg, "card_tags_set")
+    pg.locator("[role=dialog] button:has-text('Masquer de ma collection')").click(); pg.wait_for_timeout(300)
+    assert calls(pg, "hidden_set")[-1][1:] == [["fr:La_Joconde"], True] or calls(pg, "hidden_set")[-1][2] is True
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    assert pg.evaluate("[...document.querySelectorAll('.g .card .name')].filter((n) => n.innerText.trim() === 'La Joconde').length") == 0, "une carte masquée quitte la collection"
+    pg.click("button.filt"); pg.click("text=Gérer mes étiquettes"); pg.wait_for_selector("input[aria-label^='Nom de la nouvelle']")
+    pg.fill("input[aria-label^='Nom de la nouvelle']", "Mes <b>favoris</b>"); pg.click("text=Créer l'étiquette"); pg.wait_for_timeout(400)
+    assert calls(pg, "tag_save")[-1][1:3] == [None, "Mes <b>favoris</b>"] and pg.locator("b:has-text('favoris')").count() == 0, "le nom d'une étiquette reste du texte"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="masquées").locator("input").check(); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    assert pg.locator(".g .card").count() == 1 and pg.evaluate("[...document.querySelectorAll('.g .card .name')].filter((n) => n.innerText.trim() === 'La Joconde').length") == 1, "le filtre n'affiche que les cartes masquées"
+    pg.locator(".g .card").first.click(); pg.wait_for_selector("[role=dialog] .extract")
+    pg.locator("[role=dialog] button:has-text('Réafficher dans ma collection')").click(); pg.wait_for_timeout(300)
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="masquées").locator("input").uncheck(); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    assert pg.evaluate("[...document.querySelectorAll('.g .card .name')].filter((n) => n.innerText.trim() === 'La Joconde').length") == 1, "réaffichée, la carte revient"
+    pg.fill("input[type=search]", ""); pg.wait_for_timeout(300)
+
     # ---- aucune injection HTML : un nom de carte reste du texte
     pg.evaluate("window.__mock.cards[1].name = '<img src=x onerror=\"window.__pwn=1\">Piégée'")
     pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(900)
     assert "<img src=x" in pg.inner_text(".g") and pg.evaluate("window.__pwn") is None and pg.locator(".g img[src=x]").count() == 0
+
+    # ---- carte exclusive : « masquer de mon profil » (côté site), distinct du masquage local
+    ex, orig = pg.evaluate("(() => { const c = window.__mock.cards[2]; const o = c.rarity; c.rarity = 'EXC'; return [c.name, o]; })()")
+    pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(900)
+    pg.get_by_role("button", name=ex, exact=True).first.click(); pg.wait_for_selector("[role=dialog] .extract")
+    pg.locator("[role=dialog] button:has-text('Masquer de mon profil')").click(); pg.wait_for_timeout(300)
+    assert calls(pg, "exclusive_hide")[-1][2] is True and pg.locator("[role=dialog] button:has-text('Démasquer de mon profil')").count() == 1
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.evaluate("window.__mock.cards[2].rarity = %r" % orig)
+    pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(900)
 
     # ---- paquets : un clic = un paquet ; la vérification du site est posée au joueur, jamais devinée
     pg.click(".tabbar button >> nth=1"); pg.wait_for_selector(".idle")
@@ -120,6 +162,16 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / "reveal.png"))
     pg.click("text=Terminer"); pg.wait_for_selector(".idle")
 
+    # ---- plusieurs paquets d'un coup : le nombre est choisi par le joueur, un résumé de toutes les cartes à la fin
+    pg.evaluate("window.__mock.defi = false; window.__calls = []")
+    pg.wait_for_selector(".many"); k = int(pg.inner_text(".stepper b")); assert k >= 2 and f"{k} paquets d'un coup" in pg.inner_text(".many")
+    pg.click(".many .btn"); pg.wait_for_selector(".batch", timeout=6000)
+    sent = calls(pg, "open_packs")[-1]
+    assert sent[1] == k and len(sent) == 2, "le nombre choisi part tel quel, sans réponse à la vérification"
+    assert f"{k} paquets ouverts" in pg.inner_text(".batch") and pg.locator(".bgrid .card").count() == 5 * k, pg.inner_text(".batch")[:200]
+    pg.click(".batch .btn.primary"); pg.wait_for_selector(".idle")
+
+
     # ---- fusion : le lot automatique ne part qu'après une double confirmation, se suit, et peut être arrêté
     pg.evaluate("location.hash = '#/packs/fusion'"); pg.wait_for_selector(".panel")
     assert pg.locator(".chips .chip").count() == 5 and "Commune" in pg.inner_text(".panel h2")
@@ -143,7 +195,7 @@ with sync_playwright() as p:
     pg.click(".run .btn:not(.primary)"); pg.wait_for_function("document.querySelector('.run h2').innerText.includes('terminée')", timeout=8000)
     assert "Arrêté." in pg.inner_text(".run") and calls(pg, "fusion_stop")
     pg.click(".run .btn.primary"); pg.wait_for_selector(".panel .sum")
-    pg.evaluate("location.hash = '#/packs'")
+    pg.evaluate("location.hash = '#/packs/open'")
 
     # ---- marché : miser demande deux pressions
     pg.click(".tabbar button >> nth=2"); pg.wait_for_selector(".offer"); pg.wait_for_timeout(300)
@@ -153,8 +205,26 @@ with sync_playwright() as p:
     pg.locator(".offer", has_text="Colisée").locator("button.armed").click(); pg.wait_for_timeout(500)
     assert calls(pg, "bid")[-1][1:] == [11, 121] and "tu es en tête" in pg.inner_text(".toasts")
     assert "stream_watch_market" == calls(pg, "stream_watch_market")[0][0] and calls(pg, "stream_watch_market")[0][1] is True
+    # vue en liste : plus compacte, mêmes actions (et même confirmation pour miser) ; le choix est mémorisé
+    n_bid = len(calls(pg, "bid"))
+    grid_h = pg.locator(".offer").first.bounding_box()["height"]
+    pg.click("[aria-label='Vue en liste']"); pg.wait_for_selector(".lrow"); pg.wait_for_timeout(200)
+    assert calls(pg, "prefs_set")[-1][1:] == ["market_view", "list"] and pg.locator(".offer").count() == 0
+    assert pg.locator(".lrow").first.bounding_box()["height"] < grid_h / 2, "la liste est plus compacte que la grille"
+    row = pg.locator(".lrow").filter(has=pg.locator("button.bid")).first
+    row.locator("button.bid").click(); pg.wait_for_timeout(100); assert "Confirmer" in row.inner_text() and len(calls(pg, "bid")) == n_bid, "miser demande toujours une confirmation"
+    pg.click("[aria-label='Vue en grille']"); pg.wait_for_selector(".offer")
     pg.click(".seg button >> text=Échanges"); pg.wait_for_selector(".trade")
     assert "Camille te propose un échange" in pg.inner_text(".trade") and len(calls(pg, "stream_watch_market")) >= 2, "quitter le marché arrête son flux"
+
+    # ---- notifications : ouvrir la cloche les marque comme lues (sans bouton à presser)
+    pg.evaluate("window.__calls = []")
+    pg.click(".bell"); pg.wait_for_selector("[role=dialog] .n.unread"); pg.wait_for_timeout(400)
+    assert calls(pg, "read_notifications"), "ouvrir la cloche suffit pour tout marquer comme lu"
+    assert pg.locator("[role=dialog] .n.unread").count() > 0, "elles restent surlignées tant que le panneau est ouvert"
+    assert pg.locator("[role=dialog] button:has-text('Tout marquer comme lu')").count() == 0
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    assert pg.locator(".bell .badge").count() == 0, "le compteur de la cloche tombe à zéro"
 
     # ---- social : message, amis
     pg.click(".tabbar button >> nth=3"); pg.wait_for_selector(".conv"); pg.locator(".conv", has_text="Camille").click(); pg.wait_for_selector(".bub")

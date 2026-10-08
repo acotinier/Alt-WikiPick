@@ -28,7 +28,7 @@
   const avail = $derived(recipe ? recipe.avail : 0);
   const fusions = $derived(Math.floor((Number(count) || 0) / size));
   const consumed = $derived(fusions * size);
-  const minutes = $derived(Math.max(1, Math.ceil((fusions * 1.4) / 60)));
+  const minutes = $derived(Math.max(1, Math.ceil((fusions * 0.7) / 60)));
   const job = $derived(fz.job);
   const running = $derived(!!(job && job.running));
 
@@ -167,7 +167,7 @@
       <li>Les cartes verrouillées, chromatiques ou exclusives ne se fusionnent pas et n'apparaissent pas ici.</li>
       <li>Les légendaires ne se fusionnent pas ; les mythiques ne se trouvent que dans les paquets.</li>
       <li>Les cartes consommées comptent comme recyclées pour les défis de recyclage.</li>
-      <li><b>Fusion automatique</b> : une fusion à la fois, environ une par seconde, jusqu'au nombre de cartes choisi. Elle s'arrête si tu l'arrêtes, s'il n'y a plus de cartes éligibles ou à la moindre erreur. Avec « Doublons seulement », seuls les exemplaires en trop sont utilisés.</li>
+      <li><b>Fusion automatique</b> : une fusion à la fois, à la suite, jusqu'au nombre de cartes choisi. Elle s'arrête si tu l'arrêtes, s'il n'y a plus de cartes éligibles ou à la moindre erreur. Avec « Doublons seulement », seuls les exemplaires en trop sont utilisés.</li>
     </ul>
   </div>
 </Sheet>

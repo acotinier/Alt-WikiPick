@@ -1,7 +1,7 @@
 <script>
   import { call } from '../lib/api.js';
   import { ago } from '../lib/format.js';
-  import { app, nowSrv, run, setSkew, ui } from '../lib/store.svelte.js';
+  import { app, nowSrv, setSkew, ui } from '../lib/store.svelte.js';
   import Empty from '../ui/Empty.svelte';
   import Sheet from '../ui/Sheet.svelte';
 
@@ -12,9 +12,10 @@
     loading = true;
     const r = await call('load_notifications');
     loading = false;
-    if (r && r.ok) { setSkew(r.now); items = r.items; }
+    if (r && r.ok) { setSkew(r.now); items = r.items; if (r.items.some((n) => !n.read)) markRead(); } // comme sur le site : ouvrir la cloche = lire
   }
-  const readAll = () => run(() => call('read_notifications'), () => { items = items.map((n) => ({ ...n, read: true })); if (app.me) app.me.unread = 0; });
+  // les notifications restent surlignées tant que le panneau est ouvert ; le compteur, lui, tombe à zéro tout de suite
+  async function markRead() { const r = await call('read_notifications'); if (r && r.ok && app.me) app.me.unread = 0; }
   const extra = $derived([app.me?.unreadMsg && `${app.me.unreadMsg} message${app.me.unreadMsg > 1 ? 's' : ''} non lu${app.me.unreadMsg > 1 ? 's' : ''}`,
     app.me?.trades && `${app.me.trades} échange${app.me.trades > 1 ? 's' : ''} en attente`,
     app.me?.friendReq && `${app.me.friendReq} demande${app.me.friendReq > 1 ? 's' : ''} d'ami`].filter(Boolean).join(' · '));
@@ -35,7 +36,6 @@
     </div>
   {/if}
   {#if extra}<p class="muted extra">{extra}</p>{/if}
-  {#if items.some((n) => !n.read)}<button class="btn block" style="margin-top:14px" onclick={readAll}>Tout marquer comme lu</button>{/if}
 </Sheet>
 
 <style>

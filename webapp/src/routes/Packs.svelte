@@ -10,6 +10,8 @@
 
   let phase = $state('idle'), cards = $state([]), flipped = $state([]), opening = $state(false), ask = $state(null), history = $state([]), shown = $state(6);
   const me = $derived(app.me || {});
+  let batch = $state(null), many = $state(3);
+  const k = $derived(Math.max(2, Math.min(many, me.packs ?? 0, 20)));
   const n = $derived(me.packs ?? 0);
   const gold = $derived(!!(me.proPack || me.paquetOr));
   const left = $derived(me.next != null ? Math.max(0, Math.ceil(me.next - (tick.now - app.meAt) / 1000)) : null);
@@ -50,6 +52,25 @@
     call('pack_seen'); // « les cartes sont à l'écran », comme le fait le site
     if (history) loadHistory();
   }
+  // plusieurs paquets d'affilée : nombre choisi par le joueur ; s'arrête si le site demande sa vérification (c'est alors à toi d'y répondre)
+  async function openMany(count, proof) {
+    if (opening || n < 2) return;
+    if (!proof && me.defi) { opening = true; const p = await challenge(); opening = false; return p ? openMany(count, p) : undefined; }
+    opening = true;
+    const r = proof ? await call('open_packs', count, proof.defi, proof.rep) : await call('open_packs', count);
+    opening = false;
+    if (!r.ok) {
+      if (r.expired) return;
+      if (r.challenge && !proof) { app.me.defi = true; return openMany(count); }
+      return toast(r.error || 'Ouverture impossible', 'error');
+    }
+    app.me = r.me; app.meAt = Date.now();
+    batch = { packs: r.packs.length, wanted: r.wanted, stopped: r.stopped, error: r.error, cards: r.packs.flat().sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.shiny) - Number(a.shiny)) };
+    phase = 'batch'; scrollTo({ top: 0 });
+    call('pack_seen');
+    loadHistory(); collectionChanged();
+  }
+  const closeBatch = () => { batch = null; phase = 'idle'; scrollTo({ top: 0 }); collectionChanged(); refreshMe(); };
   const flip = (i) => { if (!flipped.includes(i)) flipped = [...flipped, i]; else openCard(cards[i]); };
   async function flipAll() { for (let i = 0; i < cards.length; i++) if (!flipped.includes(i)) { flipped = [...flipped, i]; await sleep(reduced ? 0 : 220); } }
   const done = (again) => { phase = 'idle'; scrollTo({ top: 0 }); collectionChanged(); refreshMe(); if (again) open(); };
@@ -68,7 +89,17 @@
   const dec = (x) => (x > 0 && x < 0.1 ? '< 0,1' : x.toLocaleString('fr-FR', { maximumFractionDigits: 1 }));
 </script>
 
-{#if phase !== 'reveal'}
+{#if phase === 'batch' && batch}
+  <section class="batch">
+    <h2 class="serif">{plural(batch.packs, 'paquet')} ouvert{batch.packs > 1 ? 's' : ''}</h2>
+    <p class="muted">{plural(batch.cards.length, 'carte')}, dont {plural(batch.cards.filter((c) => c.new).length, 'nouvelle')}.{#if batch.cards.length} La plus rare : <b style:color={color(batch.cards[0].rarity)}>{batch.cards[0].name}</b>.{/if}</p>
+    {#if batch.stopped === 'challenge'}<p class="note">Le site demande une petite vérification : elle t'attend au prochain paquet que tu ouvres.</p>
+    {:else if batch.stopped === 'error'}<p class="note">Arrêt après {plural(batch.packs, 'paquet')} : {batch.error}</p>
+    {:else if batch.packs < batch.wanted}<p class="note">Plus de paquet en réserve : {plural(batch.packs, 'paquet')} ouvert{batch.packs > 1 ? 's' : ''} sur {batch.wanted}.</p>{/if}
+    <div class="bgrid">{#each batch.cards as c, i (c.cid + i)}<Card card={c} width={150} onclick={() => openCard(c)}>{#if c.new}<span class="new">Nouvelle</span>{/if}</Card>{/each}</div>
+    <button class="btn primary block" onclick={closeBatch}>Terminer</button>
+  </section>
+{:else if phase !== 'reveal'}
   <section class="idle">
     <div class="pack-wrap" class:empty={n < 1} class:tearing={phase === 'tearing'} data-n={Math.min(n, 3)}>
       <div class="pk under u2"><div class="art"></div></div><div class="pk under u1"><div class="art"></div></div>
@@ -79,6 +110,12 @@
     <p class="next muted num">{left == null ? '' : full ? 'Réserve pleine' : `Prochain paquet dans ${clock(left)}`}</p>
     <div class="actions">
       <button class="btn primary big" disabled={opening || n < 1} onclick={() => open()}>{opening ? 'Ouverture…' : 'Ouvrir un paquet'}</button>
+      {#if n >= 2}
+        <div class="many">
+          <div class="stepper"><button aria-label="Moins" disabled={k <= 2} onclick={() => (many = k - 1)}>−</button><b class="num">{k}</b><button aria-label="Plus" disabled={k >= Math.min(n, 20)} onclick={() => (many = k + 1)}>+</button></div>
+          <button class="btn big" disabled={opening} onclick={() => openMany(k)}>Ouvrir {k} paquets d'un coup</button>
+        </div>
+      {/if}
       {#if gold}<button class="btn gold big" disabled={opening} onclick={() => open('gold')}>{me.proPack ? 'Paquet PRO du jour' : 'Ton paquet doré offert'} · {plural(me.proCards || 20, 'carte')}</button>{/if}
     </div>
   </section>
@@ -175,6 +212,12 @@
   .trk { flex: 1; height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; } .trk i { display: block; height: 100%; background: var(--ivory); transition: width .4s var(--ease); }
   .end { display: grid; gap: 18px; text-align: center; animation: rise .5s var(--ease); } .end { gap: 12px; } .end p { font-size: 16px; line-height: 1.3; max-width: 40ch; }
 
+  .many { display: flex; align-items: center; gap: 10px; } .many .btn { flex: 1; }
+  .stepper { display: flex; align-items: center; gap: 2px; padding: 3px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }
+  .stepper button { width: 36px; height: 40px; color: var(--text); font: 600 20px var(--sans); background: none; border: 0; border-radius: 9px; cursor: pointer; } .stepper button:disabled { opacity: .35; cursor: default; }
+  .stepper b { min-width: 28px; text-align: center; font: 600 18px var(--serif); }
+  .batch { display: grid; gap: 14px; } .batch .note { padding: 10px 12px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
+  .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; }
   .journal { margin-top: 10px; } .small { font-size: 12.5px; }
   .luck { display: grid; margin: 10px 0 18px; } .luck > div { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .lab { display: inline-flex; align-items: center; gap: 9px; } .lab::before { content: ""; width: 7px; height: 7px; transform: rotate(45deg); background: var(--c); box-shadow: 0 0 8px var(--c); }
