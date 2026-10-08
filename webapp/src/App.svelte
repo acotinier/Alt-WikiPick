@@ -4,6 +4,7 @@
   import { SECTIONS, go, route, startRouter } from './lib/router.svelte.js';
   import { app, boot, refreshMe, toast, ui } from './lib/store.svelte.js';
   import { tick } from './lib/ticker.svelte.js';
+  import { fz } from './lib/fusion.svelte.js';
   import { clock, compact, fmt } from './lib/format.js';
   import { rewardsReady } from './lib/rewards.js';
   import Icon from './ui/Icon.svelte';
@@ -18,7 +19,8 @@
 
   const VIEWS = {
     collection: () => import('./routes/Collection.svelte'),
-    packs: () => import('./routes/Packs.svelte'),
+    'packs/open': () => import('./routes/Packs.svelte'),
+    'packs/fusion': () => import('./routes/Fusion.svelte'),
     'market/auctions': () => import('./routes/Market.svelte'),
     'market/trades': () => import('./routes/Trades.svelte'),
     'social/messages': () => import('./routes/Messages.svelte'),
@@ -30,7 +32,7 @@
     'me/rank': () => import('./routes/Rank.svelte'),
     'me/stats': () => import('./routes/Stats.svelte'),
   };
-  const DEFAULT_SUB = { market: 'auctions', social: 'messages', me: 'profile' };
+  const DEFAULT_SUB = { packs: 'open', market: 'auctions', social: 'messages', me: 'profile' };
 
   const section = $derived(route.parts[0] === 'player' ? 'social' : route.parts[0] || 'collection');
   const sub = $derived(route.parts[0] === 'player' ? 'profile' : route.parts[1] || DEFAULT_SUB[section]);
@@ -48,8 +50,9 @@
   // pastilles : ce qui attend une action, sans ouvrir chaque écran pour le savoir
   const gc = $derived(app.rewards && app.rewards.guild_chat);
   const guildUnread = $derived(!!(gc && gc.last > gc.seen));
-  const subBadge = $derived({ messages: app.me?.unreadMsg || 0, friends: app.me?.friendReq || 0, trades: app.me?.trades || 0, rewards: rewardsReady(app) ? '!' : 0, guild: guildUnread ? '•' : 0 });
+  const subBadge = $derived({ messages: app.me?.unreadMsg || 0, friends: app.me?.friendReq || 0, trades: app.me?.trades || 0, rewards: rewardsReady(app) ? '!' : 0, guild: guildUnread ? '•' : 0, fusion: fz.job && fz.job.running ? '•' : 0 });
   const navBadge = $derived({
+    packs: fz.job && fz.job.running ? '•' : 0,
     market: app.me?.trades || 0,
     social: (app.me?.unreadMsg || 0) + (app.me?.friendReq || 0) || (guildUnread ? '•' : 0),
     me: rewardsReady(app) ? '!' : 0,

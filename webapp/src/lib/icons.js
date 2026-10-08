@@ -1,5 +1,6 @@
 // Icônes SVG (contenu statique, jamais des données du site) : un trait fin, 24×24.
 export const ICONS = {
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 015.2.9c0 1.8-2.6 2.2-2.6 4M12 17.2v.1"/>',
   coin: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
   pack: '<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M6 7h12"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',

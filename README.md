@@ -91,6 +91,7 @@ Au premier lancement, Windows SmartScreen peut afficher « Windows a protégé v
 | **Paquets** | Ouverture animée, carte par carte, avec un journal de tes paquets et ta chance mesurée face aux probabilités annoncées. |
 | **Marché** | Les enchères mises à jour en direct, en grille ou en liste. Miser, vendre, suivre tes mises, historique des achats et ventes, **cartes surveillées** avec alerte. |
 | **Échanges** | Proposer, accepter, refuser, contre-proposer, entre amis. |
+| **Fusion** | 2 ou 3 cartes du même rang pour une carte du rang au-dessus. Fusion à la main, ou **lot automatique** (« fusionne 300 cartes communes ») : une fusion à la fois, double confirmation, bouton Arrêter. Règles et chances dans l'icône « ? ». |
 | **Arène** | Combats à deux en direct, decks, Mini-Pack. |
 | **Communauté** | Messagerie, amis (favoris, blocage), profils avec collection et vitrines, guilde (fil, tchat, membres, demandes). |
 | **Récompenses** | Série de connexion sur 7 jours, quêtes du jour, quêtes de bienvenue, succès. |
@@ -140,7 +141,7 @@ gh release create v0.2.0 dist\Alt-WikiPick-windows.zip --title "v0.2.0" --notes 
 
 ## Avertissements
 
-- **Aucune automatisation.** Un clic = une action, une à la fois, avec confirmation quand elle engage des pièces ou des cartes. Pas de mise automatique, pas d'ouverture de paquets en boucle, rien qui joue à ta place. Ni l'appli ni le serveur ne répondent **jamais** à la vérification « es-tu un robot ? » du site : elle te pose la question et transmet ton clic.
+- **Presque aucune automatisation.** Un clic = une action, une à la fois, avec confirmation quand elle engage des pièces ou des cartes. Pas de mise automatique, pas d'ouverture de paquets en boucle, rien qui joue à ta place. **Seule exception : le lot de fusions**, que tu lances toi-même après une double confirmation : une fusion à la fois (environ une par seconde), jusqu'au nombre de cartes que tu as choisi, avec un bouton Arrêter ; il s'arrête à la moindre erreur sans réessayer. Une fusion ratée détruit ses cartes : lis l'icône « ? » avant de lancer un gros lot. Ni l'appli ni le serveur ne répondent **jamais** à la vérification « es-tu un robot ? » du site : elle te pose la question et transmet ton clic.
 - Volontairement absents : l'administration, les paiements, les fonctions réservées aux abonnés WIKI-PRO si tu ne l'es pas.
 - **Le jeu n'a pas de conditions d'utilisation publiées.** Un client tiers est utilisé à tes risques ; si tu l'utilises, l'héberges pour d'autres ou le diffuses, prévenir le développeur du jeu est une bonne idée.
 - **État du projet** : le décodage de la collection et des paquets, et la question de vérification de la connexion web, ont été confrontés à de vraies réponses du site ; tout le reste (marché, enchères, échanges, arène, messagerie, guilde, récompenses, connexion par identifiants) suit les formats lus dans le JS public du site et n'a pas été entièrement observé en conditions réelles. L'image Docker n'a pas encore été construite par l'auteur. Si un écran est vide ou décalé, ouvre une [issue](../../issues).

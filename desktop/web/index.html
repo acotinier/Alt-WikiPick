@@ -15,6 +15,8 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 015.2.9c0 1.8-2.6 2.2-2.6 4M12 17.2v.1"/></symbol>
+  <symbol id="i-fusion" viewBox="0 0 24 24"><rect x="4" y="5.5" width="9.5" height="13.5" rx="1.7" transform="rotate(-15 8.75 12.25)"/><rect x="10.5" y="5.5" width="9.5" height="13.5" rx="1.7" transform="rotate(15 15.25 12.25)"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7"/><path d="M20 5v6h-6"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
@@ -82,6 +84,7 @@
       <button class="tab" data-tab="packs" title="Paquets (2)"><svg class="i"><use href="#i-pack"/></svg><span class="tl">Paquets</span></button>
       <button class="tab" data-tab="market" title="Marché (3)"><svg class="i"><use href="#i-gavel"/></svg><span class="tl">Marché</span></button>
       <button class="tab" data-tab="trades" title="Échanges (4)"><svg class="i"><use href="#i-swap"/></svg><span class="tl">Échanges</span><b id="tab-trades-n" class="tabn hidden"></b></button>
+      <button class="tab" data-tab="fusion" title="Fusion"><svg class="i"><use href="#i-fusion"/></svg><span class="tl">Fusion</span><b id="tab-fusion-dot" class="tabn dot hidden"></b></button>
       <button class="tab" data-tab="arena" title="Arène"><svg class="i"><use href="#i-sword"/></svg><span class="tl">Arène</span><b id="tab-arena-dot" class="tabn dot hidden">!</b></button>
       <p class="rail-sec">Communauté</p>
       <button class="tab" data-tab="messages" title="Messages (7)"><svg class="i"><use href="#i-chat"/></svg><span class="tl">Messages</span><b id="tab-messages-n" class="tabn hidden"></b></button>
@@ -278,7 +281,9 @@
       <div id="t-list" class="tlist"></div>
     </section>
 
+    <section id="tab-fusion" class="tabpane hidden"><div id="fu-body"></div></section>
     <section id="tab-arena" class="tabpane hidden">
+
       <div id="cb-body"></div>
     </section>
 
@@ -349,6 +354,7 @@
 <script src="arena.js"></script>
 <script src="community.js"></script>
 <script src="rewards.js"></script>
+<script src="fusion.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

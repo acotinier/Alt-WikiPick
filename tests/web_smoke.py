@@ -120,6 +120,31 @@ with sync_playwright() as p:
     pg.screenshot(path=str(out / "reveal.png"))
     pg.click("text=Terminer"); pg.wait_for_selector(".idle")
 
+    # ---- fusion : le lot automatique ne part qu'après une double confirmation, se suit, et peut être arrêté
+    pg.evaluate("location.hash = '#/packs/fusion'"); pg.wait_for_selector(".panel")
+    assert pg.locator(".chips .chip").count() == 5 and "Commune" in pg.inner_text(".panel h2")
+    assert "%" not in pg.inner_text(".panel"), "les pourcentages sont dans l'aide « ? », pas sur l'écran"
+    pg.click("[aria-label^='Règles']"); pg.wait_for_selector("[role=dialog] table")
+    assert "100 %" in pg.inner_text("[role=dialog]") and "perdues" in pg.inner_text("[role=dialog]")
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.fill("input[type=number]", "9"); pg.wait_for_timeout(100)
+    assert "3 fusions" in pg.inner_text(".sum")
+    pg.evaluate("window.__calls = []")
+    pg.click("text=Lancer la fusion automatique"); pg.wait_for_timeout(200)
+    assert not calls(pg, "fusion_start"), "premier clic : rien ne part"
+    assert pg.is_visible(".btn.primary.armed") and "Confirmer" in pg.inner_text(".btn.primary.armed")
+    pg.click(".btn.primary.armed"); pg.wait_for_selector(".run", timeout=4000)
+    assert calls(pg, "fusion_start")[-1][1:] == ["C", 9, 3, True]
+    pg.wait_for_function("document.querySelector('.run h2').innerText.includes('terminée')", timeout=15000)
+    assert "Objectif atteint" in pg.inner_text(".run") and "3 sur 3 fusions" in pg.inner_text(".run")
+    pg.click(".run .btn.primary"); pg.wait_for_selector(".panel .sum")
+    pg.fill("input[type=number]", "45"); pg.click("text=Lancer la fusion automatique"); pg.click(".btn.primary.armed"); pg.wait_for_selector(".run")
+    pg.wait_for_function("document.querySelector('.run .num').innerText.startsWith('1 ')", timeout=8000)
+    pg.click(".run .btn:not(.primary)"); pg.wait_for_function("document.querySelector('.run h2').innerText.includes('terminée')", timeout=8000)
+    assert "Arrêté." in pg.inner_text(".run") and calls(pg, "fusion_stop")
+    pg.click(".run .btn.primary"); pg.wait_for_selector(".panel .sum")
+    pg.evaluate("location.hash = '#/packs'")
+
     # ---- marché : miser demande deux pressions
     pg.click(".tabbar button >> nth=2"); pg.wait_for_selector(".offer"); pg.wait_for_timeout(300)
     assert pg.locator(".offer").count() >= 5 and "Lot de 3 cartes" in pg.inner_text(".grid")
@@ -168,7 +193,7 @@ with sync_playwright() as p:
     for r in ROUTES:
         pg.evaluate("location.hash = '#/%s'" % r); pg.wait_for_timeout(700)
     pg.screenshot(path=str(out / "desktop.png"))
-    pg.keyboard.press("2"); pg.wait_for_timeout(300); assert pg.evaluate("location.hash") == "#/packs", "raccourci clavier : 2 = Paquets"
+    pg.keyboard.press("2"); pg.wait_for_timeout(300); assert pg.evaluate("location.hash") == "#/packs/open", "raccourci clavier : 2 = Paquets"
     assert not errs, errs
 
     # ---- une très grosse collection (3 904 cartes, comme un vrai joueur) : la page reste légère

@@ -1163,3 +1163,36 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---- Fusion ---- */
+.fu-top { display: flex; align-items: center; gap: 8px; }
+.fu-chips { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
+.fu-chip { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 13px 0 11px; color: var(--muted); font: 500 13.5px var(--sans); cursor: pointer;
+  background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: 99px; transition: all .18s var(--ease); }
+.fu-chip::before { content: ""; width: 8px; height: 8px; transform: rotate(45deg); border-radius: 2px; background: var(--c); box-shadow: 0 0 8px -1px var(--c); }
+.fu-chip small { color: var(--faint); font-size: 12px; }
+.fu-chip.on { color: var(--text); background: color-mix(in srgb, var(--c) 14%, transparent); border-color: color-mix(in srgb, var(--c) 55%, transparent); }
+.fu-chip.dim { opacity: .5; } .fu-chip:disabled { cursor: default; }
+.fu-panel { display: grid; gap: 14px; max-width: 560px; margin-top: 14px; padding: 18px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--hi), 0 24px 40px -30px rgba(0, 0, 0, .9); }
+.fu-panel h2 { font-size: 24px; letter-spacing: -.01em; } .fu-panel h2 em { font-style: normal; color: var(--faint); }
+.fu-n { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.fu-n input { min-height: 46px; padding: 0 14px; color: var(--text); font: 600 22px var(--serif); background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; outline: 0; }
+.fu-n input:focus { border-color: rgba(241, 232, 212, .5); box-shadow: 0 0 0 3px rgba(241, 232, 212, .1); }
+.fu-quick { display: flex; gap: 8px; flex-wrap: wrap; }
+.fu-opts { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.fu-sz { display: flex; gap: 2px; padding: 3px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }
+.fu-sz button { min-height: 36px; padding: 0 14px; color: var(--muted); font: 500 14px var(--sans); background: none; border: 0; border-radius: 9px; cursor: pointer; }
+.fu-sz button.on { color: var(--text); background: var(--ink-4); box-shadow: var(--hi); }
+.fu-check { display: flex; align-items: center; gap: 10px; font-size: 14.5px; } .fu-check input { width: 20px; height: 20px; accent-color: var(--ivory); }
+.fu-sum { font-size: 15px; line-height: 1.5; } .fu-sum .muted { font-size: 13px; }
+.fu-trk { height: 4px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; } .fu-trk i { display: block; height: 100%; background: var(--ivory); transition: width .4s var(--ease); }
+.fu-tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.fu-tally div { display: grid; padding: 10px 12px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }
+.fu-tally b { font: 600 22px var(--serif); } .fu-tally span { color: var(--muted); font-size: 12.5px; } .fu-tally .ok { color: var(--good); } .fu-tally .ko { color: var(--bad); }
+.fu-hand { margin-top: 18px; max-width: 900px; } .fu-hand summary { cursor: pointer; padding: 10px 2px; color: var(--muted); font-size: 14.5px; }
+.fu-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 10px 0 14px; }
+.fu-slot { border-radius: 14px; } .fu-slot.sel { outline: 2px solid var(--ivory); outline-offset: 3px; }
+.fu-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+.fu-help { display: grid; gap: 14px; font-size: 14.5px; line-height: 1.5; max-width: 520px; }
+.fu-help table { width: 100%; border-collapse: collapse; } .fu-help th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.fu-help td, .fu-help th { padding: 7px 4px; border-bottom: 1px solid var(--line); } .fu-help ul { display: grid; gap: 8px; padding-left: 18px; } .fu-help .muted { font-size: 13px; }

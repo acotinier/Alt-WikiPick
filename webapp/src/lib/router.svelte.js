@@ -22,7 +22,8 @@ export const go = (path, replace = false) => {
 // Sections de l'appli : 5 onglets en bas (mobile) ou dans la colonne de gauche (grand écran).
 export const SECTIONS = [
   { id: 'collection', label: 'Collection', icon: 'cards', to: '/collection' },
-  { id: 'packs', label: 'Paquets', icon: 'pack', to: '/packs' },
+  { id: 'packs', label: 'Paquets', icon: 'pack', to: '/packs/open',
+    subs: [['open', 'Ouvrir'], ['fusion', 'Fusion']] },
   { id: 'market', label: 'Marché', icon: 'gavel', to: '/market/auctions',
     subs: [['auctions', 'Enchères'], ['trades', 'Échanges']] },
   { id: 'social', label: 'Social', icon: 'users', to: '/social/messages',

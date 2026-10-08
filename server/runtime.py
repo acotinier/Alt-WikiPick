@@ -71,6 +71,7 @@ class Hub:
         if rt:
             try:
                 rt.service.stop_stream()
+                rt.service.fusion_stop()
                 if wipe:
                     rt.service.logout()
             except Exception:

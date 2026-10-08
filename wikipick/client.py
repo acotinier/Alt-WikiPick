@@ -9,7 +9,7 @@ import os
 import stat
 import sys
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 
@@ -194,6 +194,14 @@ class WikiPickClient:
 
     def trade_send(self, body, counter=False):
         return self._post_json("/api/trade/counter" if counter else "/api/trade/create", body)
+
+    def fusion(self, rank=None, page=0):
+        """L'atelier de fusion : sans rang, seulement les recettes ; avec un rang, les cartes fusionnables (24 par page, doublons d'abord)."""
+        return self._get_json("/api/fusion" + (f"?rang={quote(rank, safe='')}&page={int(page)}" if rank else ""))
+
+    def fusion_do(self, ids, page=0):
+        """UNE fusion (2 ou 3 cartes du même rang). Elle peut rater : les cartes sont alors perdues. Jamais rejouée."""
+        return self._post_json("/api/fusion", {"ids": ids, "page": page})
 
     def bank(self, card_id):
         return self._post_json("/api/bank", {"card_id": card_id})

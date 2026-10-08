@@ -30,6 +30,9 @@ const D = __DATA__;
 const INFO = {odds:{M:0.1,L:0.5,UR:2,SR:8,R:30,PC:70,C:100}, bank:{C:1,PC:3,R:10,SR:40,UR:100,L:500,M:2000}, shinyOdds:0.2, perPack:5};
 const copy = (o) => JSON.parse(JSON.stringify(o));
 const cardOf = (cid, name, r) => ({cid, name, desc:'', img:null, rarity:r, reads:5000, shiny:false, copies:1, locked:false, tags:[], ids:[], url:null, new:false});
+window.__fus=Array.from({length:60},(_,i)=>Object.assign(cardOf('fr:F'+i,'Fusionnable '+i,'C'),{id:7000+i,ids:[7000+i],copies:i<45?2:1})); window.__job=null;
+window.__fusionState=(rank,page)=>({ok:true,small:2,big:3,bonus:5,bonus2:3,rank,page,pages:Math.max(1,Math.ceil(window.__fus.length/24)),total:window.__fus.length,cards:window.__fus.slice(page*24,page*24+24),
+  recipes:[['C','PC',100,90,window.__fus.length],['PC','R',85,70,2366]].map(([r,to,b,b2,a])=>({rank:r,to,base:b,base2:b2,chance:b,chance2:b2,fails:0,avail:a}))});
 const REW = {quests:[{title:'Ouvre 3 paquets',what:'Trois paquets dans la journée',done:1,goal:3,finished:false,claimed:false,locked:false,next:3600,gain:50,packs:false},
   {title:'Mini <b>x</b>',what:'',done:1,goal:1,finished:true,claimed:false,locked:false,next:3600,gain:2,packs:true}],
   welcome:[{code:'b1',title:'Premier paquet',what:'',done:1,goal:1,finished:true,claimed:false,gain:20},{code:'b2',title:'Premier échange',what:'',done:0,goal:1,finished:false,claimed:false,gain:30}],
@@ -89,6 +92,14 @@ window.pywebview={api:{
  user_cards:async(n)=>{window.__calls.push('user_cards:'+n);return {ok:true,groups:[{card:cardOf('fr:T1','Leur carte <b>x</b>','SR'),ids:[9001,9002]},{card:cardOf('fr:T2','Autre','C'),ids:[9003]}]};},
  recycle:async(ids)=>{window.__calls.push('recycle:'+ids.length+':'+ids[0]);window.__recycled.push(...ids);window.pywebview.api._w('Recyclage '+ids.length);
    return {ok:true,gain:ids.length===1?500:ids.length*2,sold:ids.length,locked:0};},
+ fusion_get:async(rank,page)=>{window.__calls.push('fusion_get:'+rank+':'+page);return window.__fusionState(rank||'C',page||0);},
+ fusion_do:async(ids,page)=>{window.__calls.push('fusion_do:'+JSON.stringify(ids));window.pywebview.api._w('Fusion de '+ids.length+' cartes');
+   window.__fus=window.__fus.filter(c=>!ids.includes(c.id));return {ok:true,success:true,rank:'C',to:'PC',chance:100,next_chance:100,used:ids,card:Object.assign(cardOf('fr:N','Nouvelle <b>x</b>','PC'),{id:9900,new:true}),me:null,state:window.__fusionState('C',page||0)};},
+ fusion_start:async(rank,count,size,dups)=>{window.__calls.push('fusion_start:'+JSON.stringify([rank,count,size,dups]));window.pywebview.api._w('Fusion automatique');
+   window.__job={running:true,rank,to:'PC',size,dups_only:dups,goal:Math.floor(count/size),fusions:0,won:0,lost:0,used:0,new:0,last:null,chance:100,left:60,reason:null,error:null,me:null};return {ok:true,job:window.__job};},
+ fusion_job:async()=>{const j=window.__job;if(j&&j.running){j.fusions++;j.won++;j.used+=j.size;j.new++;j.last={cid:'fr:N',name:'Dernière <b>x</b>',img:null,rarity:'PC',new:true};
+   if(j.fusions>=j.goal){j.running=false;j.reason='done';}}return {ok:true,job:j||null};},
+ fusion_stop:async()=>{window.__calls.push('fusion_stop');if(window.__job&&window.__job.running){window.__job.running=false;window.__job.reason='stopped';}return {ok:true};},
  corbeille_get:async()=>({ok:true,price:4,minutes:20,items:[{id:801,card:cardOf('fr:D1','Recyclée 1','C'),left:600},{id:802,card:cardOf('fr:D2','Recyclée 2','R'),left:60}]}),
  corbeille_restore:async(ids,all)=>{window.__calls.push('restore:'+JSON.stringify(ids)+':'+all);return {ok:true,restored:all?2:1,cost:all?8:4};},
  corbeille_empty:async()=>{window.__calls.push('empty');return {ok:true,erased:2};},
@@ -306,6 +317,36 @@ with sync_playwright() as p:
     assert calls(pg, "read_notifications") == 1 and not pg.is_visible("#bell-n") and pg.locator(".nitem.unread").count() == 0
     assert pg.is_visible("#bell-panel")
     pg.mouse.click(3, 400); pg.wait_for_timeout(100); assert not pg.is_visible("#bell-panel"), "clic en dehors : la cloche se ferme"
+
+    # --- fusion : le lot automatique ne part qu'après une double confirmation, se suit, et peut être arrêté
+    pg.click("[data-tab=fusion]"); pg.wait_for_selector("#fu-body .fu-panel")
+    assert pg.locator(".fu-chip").count() == 2 and "Commune" in pg.inner_text(".fu-panel h2")
+    assert "%" not in pg.inner_text(".fu-panel"), "les pourcentages sont dans l'aide « ? », pas sur l'écran"
+    pg.click("[aria-label^='Règles']"); pg.wait_for_selector("#dialog-body table"); assert "100 %" in pg.inner_text("#dialog-body") and "perdues" in pg.inner_text("#dialog-body")
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.fill(".fu-n input", "9"); pg.wait_for_timeout(100); assert "3 fusions" in pg.inner_text(".fu-sum")
+    pg.evaluate("window.__calls = []")
+    go = pg.locator("[data-act=fu-go]"); go.click(); pg.wait_for_timeout(150)
+    assert not [c for c in pg.evaluate("window.__calls") if c.startswith("fusion_start")], "premier clic : rien ne part"
+    assert "Confirmer : fusionner 9 cartes" in go.inner_text()
+    go.click(); pg.wait_for_selector(".fu-run", timeout=4000)
+    assert 'fusion_start:["C",9,3,true]' in pg.evaluate("window.__calls")
+    pg.wait_for_function("document.querySelector('.fu-run h2').innerText.includes('terminée')", timeout=15000)
+    assert "Objectif atteint" in pg.inner_text(".fu-run") and "3 sur 3 fusions" in pg.inner_text(".fu-run") and "<b>x</b>" in pg.inner_text(".fu-run"), "texte, jamais du HTML"
+    pg.click("[data-act=fu-ok]"); pg.wait_for_selector(".fu-panel .fu-sum")
+    pg.fill(".fu-n input", "45"); pg.locator("[data-act=fu-go]").click(); pg.locator("[data-act=fu-go]").click(); pg.wait_for_selector(".fu-run")
+    pg.click("[data-act=fu-stop]"); pg.wait_for_function("document.querySelector('.fu-run h2').innerText.includes('terminée')", timeout=8000)
+    assert "Arrêté." in pg.inner_text(".fu-run") and "fusion_stop" in pg.evaluate("window.__calls")
+    pg.click("[data-act=fu-ok]"); pg.wait_for_selector(".fu-panel .fu-sum")
+    pg.click(".fu-hand summary"); pg.wait_for_selector(".fu-pick .fu-slot")
+    pg.evaluate("window.__calls = []")
+    for i in range(3): pg.locator(".fu-slot").nth(i).locator(".card").click()
+    man = pg.locator("[data-act=fu-manual]"); man.click(); pg.wait_for_timeout(100)
+    assert not [c for c in pg.evaluate("window.__calls") if c.startswith("fusion_do")], "à la main aussi : une première pression ne part pas"
+    man.click(); pg.wait_for_timeout(400)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("fusion_do")] == ["fusion_do:[7000,7001,7002]"]
+    pg.wait_for_selector("#modal .card, #modal [class*=m-]"); assert "Nouvelle <b>x</b>" in pg.inner_text("#modal"), "la carte obtenue s'ouvre, son nom reste du texte"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
 
     # --- marché en direct (lecture seule)
     pg.click("[data-tab=market]"); pg.wait_for_timeout(500)

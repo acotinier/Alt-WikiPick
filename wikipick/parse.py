@@ -121,6 +121,32 @@ def expand_pack_card(c):
     }
 
 
+FUSION_RANKS = ("C", "PC", "R", "SR", "UR")  # les rangs qu'on peut fusionner (les légendaires et mythiques ne se fusionnent pas)
+
+
+def parse_fusion(d):
+    """Atelier de fusion (`GET /api/fusion`, `POST /api/fusion` -> `etat`). Forme vérifiée sur une vraie réponse :
+    petite / cartes (2 ou 3 cartes), bonus / bonus2 (points de maîtrise par échec), recettes[{rang, vers, base, base2, echecs,
+    chance, chance2, dispo}], rang, page, pages, total, parPage, liste[carte + id + exemplaires] (doublons d'abord)."""
+    d = d if isinstance(d, dict) else {}
+    recipes = []
+    for x in d.get("recettes") or []:
+        if isinstance(x, dict) and x.get("rang") in FUSION_RANKS:
+            recipes.append({"rank": x["rang"], "to": str(x.get("vers") or ""), "base": _to_int(x.get("base")), "base2": _to_int(x.get("base2")),
+                            "chance": _to_int(x.get("chance")), "chance2": _to_int(x.get("chance2")), "fails": _to_int(x.get("echecs")),
+                            "avail": _to_int(x.get("dispo"))})
+    cards = []
+    for c in d.get("liste") or []:
+        if isinstance(c, dict) and c.get("id"):
+            card = expand_pack_card(c)
+            card["id"] = _to_int(c["id"])
+            card["copies"] = max(1, _to_int(c.get("exemplaires"), 1))
+            cards.append(card)
+    return {"small": _to_int(d.get("petite"), 2), "big": _to_int(d.get("cartes"), 3), "bonus": _to_int(d.get("bonus")), "bonus2": _to_int(d.get("bonus2")),
+            "recipes": recipes, "rank": d.get("rang") if d.get("rang") in FUSION_RANKS else None, "page": _to_int(d.get("page")),
+            "pages": _to_int(d.get("pages")), "total": _to_int(d.get("total")), "cards": cards}
+
+
 def _parse_lot(lot):
     if not isinstance(lot, dict):
         return None

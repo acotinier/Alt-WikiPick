@@ -154,7 +154,7 @@
   /* la révélation tient dans l'écran, sans défilement : les cartes prennent la place restante (3 par rangée, 1 rangée dès 700 px) */
   .reveal { --bot: calc(var(--nav) + var(--sab)); --cols: 3; --rws: var(--rows); --gap: 12px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
-    height: max(360px, calc(100dvh - var(--top) - var(--sat) - var(--bot) - 118px)); }
+    height: max(360px, calc(100dvh - var(--top) - var(--sat) - var(--bot) - 132px)); }
   .pcards { flex: 1; min-height: 0; width: 100%; container-type: size; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: var(--gap); perspective: 1200px; }
   .pcard { position: relative; flex: none; padding: 0; aspect-ratio: 5 / 7; width: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((100cqh - (var(--rws) - 1) * var(--gap)) / var(--rws) * 5 / 7)); background: none; border: 0; border-radius: 13px; cursor: pointer; animation: deal .55s cubic-bezier(.2, .9, .25, 1.1) backwards; animation-delay: calc(var(--i) * 90ms); }
   @keyframes deal { from { opacity: 0; transform: translateY(-50px) rotate(-5deg) scale(.85); } }

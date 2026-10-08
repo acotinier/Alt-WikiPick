@@ -12,9 +12,9 @@ from pathlib import Path
 from .client import BASE, ApiError, SessionExpired
 from .export import collection_csv
 from .live import LiveStream
-from .parse import (compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
-                    parse_combat_info, parse_corbeille, parse_decks, parse_defi, parse_duel, parse_friends, parse_history,
-                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_trade, parse_user_cards, parse_users, _safe_img)
+from .parse import (FUSION_RANKS, compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
+                    parse_combat_info, parse_corbeille, parse_decks, parse_defi, parse_duel, parse_friends, parse_fusion, parse_history,
+                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
 from .social import (parse_achievements, parse_claim, parse_conversations, parse_friend_lists, parse_guild, parse_guilds,
                      parse_player_cards, parse_profile, parse_rewards_state, parse_thread, parse_user_search)
 from .store import JsonStore
@@ -22,6 +22,10 @@ from .store import JsonStore
 PACK_HISTORY_MAX = 300  # paquets gardés dans le journal local
 WATCH_MAX = 200  # cartes surveillées au plus
 ACTIONS_MAX = 200  # actions gardées dans le journal local
+ACTIONS_MAX = 200  # actions gardées dans le journal local
+FUSION_PAUSE = 1.0  # secondes entre deux fusions d'un lot (le site, lui, anime chaque fusion pendant plus de deux secondes)
+FUSION_DEADMAN = 90  # un lot s'arrête si l'interface n'est pas venue voir où il en est depuis ce nombre de secondes
+FUSION_MAX_CARDS = 20000  # cartes consommées au plus par lot
 AUCTION_DURATIONS = ("10m", "30m", "1h", "6h", "12h", "24h")  # celles du site
 # Préférences : seules ces clés et ces valeurs sont acceptées (l'interface ne peut rien écrire d'autre)
 PREF_BOOLS = ("sound",)
@@ -51,6 +55,13 @@ def _num(v, name, lo=1, hi=10**9):
     if isinstance(v, bool) or not isinstance(v, (int, float)) or v != int(v) or not lo <= v <= hi:
         raise ApiError(f"{name} invalide.")
     return int(v)
+
+
+def _fusion_ids(v):
+    ids = _ids(v, "Cartes", 3)
+    if len(ids) not in (2, 3) or len(set(ids)) != len(ids):
+        raise ApiError("Une fusion prend 2 ou 3 cartes différentes.")
+    return ids
 
 
 def _ids(v, name, limit):
@@ -87,6 +98,8 @@ class Service:
         self._dir.mkdir(parents=True, exist_ok=True)
         self._pack_lock = threading.Lock()  # une seule ouverture à la fois
         self._write_lock = threading.Lock()  # une seule écriture à la fois : jamais deux clics simultanés
+        self._fusion = None  # le lot de fusions en cours (ou le dernier), voir fusion_start()
+        self._fusion_halt = threading.Event()
         self._actions = JsonStore(self._dir / "actions.json", [])  # journal local de ce que tu as fait depuis l'appli
         self._seen_ts = None  # horodatage du dernier paquet ouvert, à acquitter via pack_seen()
         self._seen_genre = "normal"  # normal | or
@@ -110,6 +123,7 @@ class Service:
 
     def logout(self):
         self._live.stop()
+        self._fusion_halt.set()
         self._client.clear_session()
         try:  # la collection en cache appartient au compte qui se déconnecte
             self._cache_file.unlink()
@@ -469,6 +483,131 @@ class Service:
             return {"ok": True, "gain": _num(d.get("gain") or 0, "Gain", 0), "sold": _num(len(ids) if sold is None else sold, "Ventes", 0),
                     "locked": _num(d.get("locked") or 0, "Verrouillées", 0)}
         return self._write(f"Recyclage de {len(card_ids) if isinstance(card_ids, list) else '?'} carte(s)", run)
+
+    # ---- fusion : 2 ou 3 cartes du même rang -> une carte du rang au-dessus, ou tout est perdu ----
+    def fusion_get(self, rank=None, page=0):
+        """L'atelier. Sans rang : le plus bas où l'on peut tenter une fusion (comme le site)."""
+        def run():
+            if rank is not None and rank not in FUSION_RANKS:
+                raise ApiError("Rang invalide.")
+            d = parse_fusion(self._client.fusion(rank, _num(page, "Page", 0, 100000)) or {})
+            if rank is None and d["recipes"]:
+                best = next((x for x in d["recipes"] if x["avail"] >= d["small"]), d["recipes"][0])
+                d = parse_fusion(self._client.fusion(best["rank"], 0) or {})
+            return {"ok": True, **d}
+        return self._guard(run)
+
+    @staticmethod
+    def _fusion_result(r, sent):
+        """Lit la réponse d'une fusion SANS jamais lever d'erreur de forme : la fusion a déjà eu lieu, il faut en rendre compte."""
+        card = expand_pack_card(r["carte"]) if r.get("reussie") is True and isinstance(r.get("carte"), dict) else None
+        parts = [i for i in r.get("parties") or [] if isinstance(i, int) and not isinstance(i, bool)] or list(sent)
+        me = r.get("me")
+        return {"success": r.get("reussie") is True, "rank": r.get("rang"), "to": r.get("vers"), "chance": _to_int(r.get("chance")),
+                "next_chance": _to_int(r.get("prochaine")), "used": parts, "card": card, "me": safe_me(me, None) if isinstance(me, dict) else None}
+
+    def fusion_do(self, ids, page=0):
+        """UNE fusion à la main. Elle peut rater : les cartes posées sont alors perdues (la confirmation se fait dans l'interface)."""
+        def run():
+            sent = _fusion_ids(ids)
+            r = self._client.fusion_do(sent, _num(page, "Page", 0, 100000)) or {}
+            if not isinstance(r.get("reussie"), bool):
+                raise ApiError("Réponse inattendue du site : vérifie ta collection avant de réessayer.")
+            return {"ok": True, **self._fusion_result(r, sent), "state": parse_fusion(r.get("etat"))}
+        return self._write(f"Fusion de {len(ids) if isinstance(ids, list) else '?'} cartes", run)
+
+    def fusion_start(self, rank, count, size=3, dups_only=True):
+        """Lot de fusions : jusqu'à `count` cartes d'un rang, `size` par fusion, une fusion à la fois, au plus une par seconde.
+        Lancé et confirmé par le joueur ; il s'arrête à l'objectif, s'il n'y a plus de cartes éligibles, à la moindre erreur
+        (jamais de nouvel essai), sur fusion_stop(), ou si l'interface ne vient plus voir (FUSION_DEADMAN). Pendant le lot,
+        aucune autre écriture n'est possible. `dups_only` : n'utilise que des doublons (il reste toujours un exemplaire)."""
+        if rank not in FUSION_RANKS:
+            return {"ok": False, "error": "Rang invalide."}
+        try:
+            size = _num(size, "Cartes par fusion", 2, 3)
+            count = _num(count, "Nombre de cartes", size, FUSION_MAX_CARDS)
+        except ApiError as e:
+            return {"ok": False, "error": str(e)}
+        if not isinstance(dups_only, bool):
+            return {"ok": False, "error": "Option invalide."}
+        if not self._write_lock.acquire(blocking=False):
+            return {"ok": False, "error": "Une action est déjà en cours."}
+        goal = count // size
+        job = {"running": True, "rank": rank, "to": None, "size": size, "dups_only": dups_only, "goal": goal, "fusions": 0, "won": 0, "lost": 0,
+               "used": 0, "new": 0, "last": None, "chance": None, "left": None, "reason": None, "error": None, "me": None, "poll": time.monotonic()}
+        self._log_action(f"Fusion automatique lancée : {rank}, {goal} fusion(s) de {size} cartes" + (" (doublons seulement)" if dups_only else ""), {"ok": True})
+        self._fusion = job
+        self._fusion_halt.clear()
+        try:
+            threading.Thread(target=self._fusion_run, args=(job,), daemon=True).start()
+        except Exception:
+            job["running"] = False
+            self._write_lock.release()
+            return {"ok": False, "error": "Impossible de lancer le lot."}
+        return self.fusion_job()
+
+    def _fusion_run(self, job):
+        reason, error = "done", None
+        try:
+            d = parse_fusion(self._client.fusion(job["rank"], 0) or {})
+            while job["fusions"] < job["goal"]:
+                if self._fusion_halt.is_set():
+                    reason = "stopped"
+                    break
+                if time.monotonic() - job["poll"] > FUSION_DEADMAN:
+                    reason = "away"
+                    break
+                recipe = next((x for x in d["recipes"] if x["rank"] == job["rank"]), None)
+                job["to"] = recipe["to"] if recipe else job["to"]
+                job["left"] = recipe["avail"] if recipe else None
+                picks = [c for c in d["cards"] if c["copies"] > 1 or not job["dups_only"]][:job["size"]]
+                if len(picks) < job["size"]:
+                    reason = "empty"
+                    break
+                sent = [c["id"] for c in picks]
+                r = self._client.fusion_do(sent, 0) or {}
+                if not isinstance(r.get("reussie"), bool):
+                    raise ApiError("Réponse inattendue du site : le lot est arrêté, vérifie ta collection.")
+                res = self._fusion_result(r, sent)
+                job["fusions"] += 1
+                job["used"] += len(res["used"])
+                job["won" if res["success"] else "lost"] += 1
+                job["chance"] = res["next_chance"]
+                job["me"] = res["me"] or job["me"]
+                if res["card"]:
+                    job["new"] += 1 if res["card"]["new"] else 0
+                    job["last"] = {k: res["card"][k] for k in ("cid", "name", "img", "rarity", "new")}
+                d = parse_fusion(r["etat"]) if isinstance(r.get("etat"), dict) else parse_fusion(self._client.fusion(job["rank"], 0) or {})
+                if job["fusions"] < job["goal"] and self._fusion_halt.wait(FUSION_PAUSE):
+                    reason = "stopped"
+                    break
+        except SessionExpired as e:
+            self._client.clear_session()
+            reason, error = "error", str(e)
+        except ApiError as e:
+            reason, error = "error", str(e)
+        except Exception as e:  # rien ne doit tuer le fil sans le dire
+            reason, error = "error", f"Erreur inattendue : {e.__class__.__name__}: {e}"
+        finally:  # « terminé » n'est annoncé qu'une fois le journal écrit et le verrou libéré
+            job["reason"], job["error"] = reason, error
+            try:
+                self._log_action(f"Fusion automatique terminée ({reason}) : {job['fusions']} fusion(s), {job['won']} réussie(s), {job['lost']} ratée(s), "
+                                 f"{job['used']} cartes consommées", {"ok": reason != "error", "error": error})
+            finally:
+                self._write_lock.release()
+                job["running"] = False
+
+    def fusion_job(self):
+        """Où en est le lot (ou le dernier). L'interface doit le demander régulièrement : c'est ce qui le garde en vie."""
+        job = self._fusion
+        if job is None:
+            return {"ok": True, "job": None}
+        job["poll"] = time.monotonic()
+        return {"ok": True, "job": {k: v for k, v in job.items() if k != "poll"}}
+
+    def fusion_stop(self):
+        self._fusion_halt.set()
+        return {"ok": True}
 
     def corbeille_get(self):
         return self._guard(lambda: {"ok": True, **parse_corbeille(self._client.corbeille() or {})})

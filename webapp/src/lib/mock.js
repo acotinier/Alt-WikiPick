@@ -41,6 +41,8 @@ function stats(cards) {
 const card = (i, r, extra) => { const a = ARTICLES[i % ARTICLES.length]; return { cid: 'fr:' + a[0], name: a[1], desc: a[2], img: a[3], rarity: r, reads: 5000 + i * 1111, shiny: false, copies: 1, locked: false, tags: [], ids: [], url: 'https://fr.wikipedia.org/wiki/' + a[0], new: false, ...extra }; };
 
 const S = {
+  job: null,
+  fus: { n: 0, stock: Array.from({ length: 60 }, (_, i) => ({ ...card(i, 'C'), id: 5000 + i, ids: [5000 + i], copies: i < 45 ? 2 : 1 })) },
   logged: localStorage.getItem('mock-logged') !== '0',
   cards: makeCards(), coins: 1629, packs: 3, defi: false, unread: 2, unreadMsg: 2, friendReq: 1, trades: 1,
   prefs: {}, watch: [], log: [], bids: {}, packsOpened: 0,
@@ -53,6 +55,13 @@ const S = {
     { title: 'Une belle prise', what: 'Obtiens une carte rare ou mieux', done: 1, goal: 1, finished: true, claimed: false, locked: false, next: 3600, gain: 2, packs: true }],
   welcome: [{ code: 'b1', title: 'Ouvrir un premier paquet', what: '', done: 1, goal: 1, finished: true, claimed: false, gain: 20 }, { code: 'b2', title: 'Faire un premier échange', what: '', done: 0, goal: 1, finished: false, claimed: false, gain: 30 }],
 };
+
+function fusionState(rank, page) {
+  const cards = S.fus.stock;
+  return { ok: true, small: 2, big: 3, bonus: 5, bonus2: 3, rank, page, pages: Math.max(1, Math.ceil(cards.length / 24)), total: cards.length, cards: cards.slice(page * 24, page * 24 + 24),
+    recipes: [['C', 'PC', 100, 90, cards.length], ['PC', 'R', 85, 70, 2366], ['R', 'SR', 45, 40, 427], ['SR', 'UR', 35, 30, 131], ['UR', 'L', 25, 15, 52]]
+      .map(([r, to, b, b2, avail]) => ({ rank: r, to, base: b, base2: b2, chance: b, chance2: b2, fails: 0, avail })) };
+}
 
 function me() {
   return { id: 1, name: 'Alex', coins: S.coins, packs: S.packs, packMax: 10, packReserve: S.packs, next: 423, cards: S.cards.length, pro: false, succes: 1, aucLive: 0, aucMax: 5,
@@ -167,6 +176,32 @@ const H = {
     history: [{ me: 2, them: 1, defended: false, opponent: 'Bob', gain: 30, when: now() - 600 }] }),
   combat_state: () => ({ ok: true, defi: null }),
   actions_get: () => ({ ok: true, actions: S.log }),
+  fusion_get: (rank, page = 0) => fusionState(rank || 'C', page),
+  fusion_do: (ids, page = 0) => {
+    S.fus.stock = S.fus.stock.filter((c) => !ids.includes(c.id));
+    const success = ++S.fus.n % 4 !== 0;
+    return { ok: true, success, rank: 'C', to: 'PC', chance: 100, next_chance: success ? 100 : 105, used: ids, card: success ? { ...card(S.fus.n, 'PC'), id: 9000 + S.fus.n, new: true } : null, me: me(), state: fusionState('C', page) };
+  },
+  fusion_start: (rank, count, size, dups) => {
+    if (S.job && S.job.running) return { ok: false, error: 'Une action est déjà en cours.' };
+    S.job = { running: true, rank, to: 'PC', size, dups_only: dups, goal: Math.floor(count / size), fusions: 0, won: 0, lost: 0, used: 0, new: 0, last: null, chance: 100, left: S.fus.stock.length, reason: null, error: null, me: null };
+    return { ok: true, job: S.job };
+  },
+  fusion_job: () => { // chaque demande de l'écran fait avancer le lot d'une fusion
+    const j = S.job;
+    if (j && j.running) {
+      const pool = S.fus.stock.filter((c) => c.copies > 1 || !j.dups_only).slice(0, j.size);
+      if (pool.length < j.size) { j.running = false; j.reason = 'empty'; }
+      else {
+        const r = H.fusion_do(pool.map((c) => c.id), 0);
+        j.fusions++; j.used += j.size; j[r.success ? 'won' : 'lost']++; j.chance = r.next_chance;
+        if (r.card) { j.new++; j.last = { cid: r.card.cid, name: r.card.name, img: r.card.img, rarity: 'PC', new: true }; }
+        if (j.fusions >= j.goal) { j.running = false; j.reason = 'done'; }
+      }
+    }
+    return { ok: true, job: j || null };
+  },
+  fusion_stop: () => { if (S.job && S.job.running) { S.job.running = false; S.job.reason = 'stopped'; } return { ok: true }; },
   corbeille_get: () => ({ ok: true, price: 4, minutes: 20, items: [{ id: 801, card: card(11, 'C'), left: 600 }] }),
   corbeille_restore: () => ({ ok: true, restored: 1, cost: 4 }),
   corbeille_empty: () => ({ ok: true, erased: 1 }),

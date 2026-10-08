@@ -10,7 +10,7 @@ open_pack open_gold_pack pack_challenge pack_history pack_seen
 prefs_get prefs_set watch_get watch_set
 load_notifications read_notifications load_market stream_watch_market load_card load_trades load_ranking
 actions_get auction_get bid auction_create auction_cancel auction_price trade_action trade_send
-recycle corbeille_get corbeille_restore corbeille_empty card_lock card_for_sale wish_set
+recycle fusion_get fusion_do fusion_start fusion_job fusion_stop corbeille_get corbeille_restore corbeille_empty card_lock card_for_sale wish_set
 friends_get user_cards pro_market
 combat_info combat_state combat_decks combat_deck_save combat_deck_delete combat_challenge combat_answer
 combat_choice combat_team combat_cancel combat_chest users_search
