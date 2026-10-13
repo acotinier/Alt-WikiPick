@@ -32,10 +32,12 @@ export function duration(s) {
   return j ? `${j} j ${h} h` : h ? `${h} h ${m} min` : `${Math.max(1, m)} min`;
 }
 
-// Les vignettes Wikimedia existent en tailles fixes : une grille mobile n'a pas besoin de 330 px par carte.
+// Les vignettes Wikimedia n'existent qu'en tailles fixes (toute autre est refusée) : on prend la plus petite qui suffit.
+const STEPS = [20, 40, 60, 120, 250, 330, 500, 960, 1280, 1920, 3840];
 export function thumb(url, width) {
   if (!url) return url;
-  return url.replace(/\/(\d+)px-/, (m, w) => (+w > width ? `/${width}px-` : m));
+  const step = STEPS.find((s) => s >= width) || STEPS[STEPS.length - 1];
+  return url.replace(/\/(\d+)px-/, (m, w) => (+w > step ? `/${step}px-` : m));
 }
 
 export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };

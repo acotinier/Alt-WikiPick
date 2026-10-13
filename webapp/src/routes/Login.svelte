@@ -49,9 +49,9 @@
   main { min-height: 100dvh; display: grid; place-items: center; padding: calc(var(--sat) + 24px) 20px calc(var(--sab) + 24px); position: relative; overflow: hidden; }
   .art { position: absolute; inset: 0; pointer-events: none; opacity: .5; }
   .art i { position: absolute; width: 160px; aspect-ratio: 5 / 7; border-radius: 14px; border: 1px solid; filter: blur(.3px); }
-  .a { top: 6%; left: -40px; transform: rotate(-16deg); border-color: var(--r-R); box-shadow: 0 0 60px -20px var(--r-R); background: linear-gradient(160deg, #1b2c52, #0c1730); }
-  .b { top: 10%; right: -50px; transform: rotate(14deg); border-color: var(--r-L); box-shadow: 0 0 60px -20px var(--r-L); background: linear-gradient(160deg, #1b2c52, #0c1730); }
-  .c { bottom: 4%; left: 30%; transform: rotate(8deg); border-color: var(--r-SR); box-shadow: 0 0 60px -20px var(--r-SR); background: linear-gradient(160deg, #1b2c52, #0c1730); }
+  .a { top: 6%; left: -40px; transform: rotate(-16deg); border-color: var(--r-R); box-shadow: 0 0 60px -20px var(--r-R); background: linear-gradient(160deg, #1f4034, #0c211a); }
+  .b { top: 10%; right: -50px; transform: rotate(14deg); border-color: var(--r-L); box-shadow: 0 0 60px -20px var(--r-L); background: linear-gradient(160deg, #1f4034, #0c211a); }
+  .c { bottom: 4%; left: 30%; transform: rotate(8deg); border-color: var(--r-SR); box-shadow: 0 0 60px -20px var(--r-SR); background: linear-gradient(160deg, #1f4034, #0c211a); }
   .card { position: relative; width: min(420px, 100%); display: grid; gap: 16px; padding: 28px 24px; background: var(--glass); backdrop-filter: blur(20px); border-radius: var(--rad-xl); box-shadow: var(--sh-3); animation: rise .6s var(--ease); }
   h1 { font-size: 46px; line-height: 1; letter-spacing: -.03em; }
   h1 span { color: var(--gold); }

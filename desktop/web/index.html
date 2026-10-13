@@ -91,9 +91,11 @@
       <button class="tab" data-tab="friends" title="Amis (8)"><svg class="i"><use href="#i-users"/></svg><span class="tl">Amis</span><b id="tab-friends-n" class="tabn hidden"></b></button>
       <button class="tab" data-tab="guild" title="Guilde (9)"><svg class="i"><use href="#i-shield"/></svg><span class="tl">Guilde</span><b id="tab-guild-dot" class="tabn dot hidden">•</b></button>
       <p class="rail-sec">Toi</p>
+      <button class="tab" data-tab="season" title="Season Pass"><svg class="i"><use href="#i-star"/></svg><span class="tl">Season Pass</span><b id="tab-season-dot" class="tabn dot gold hidden"></b></button>
       <button class="tab" data-tab="profile" title="Profil"><svg class="i"><use href="#i-user"/></svg><span class="tl">Profil</span></button>
       <button class="tab" data-tab="rewards" title="Récompenses"><svg class="i"><use href="#i-gift"/></svg><span class="tl">Récompenses</span><b id="tab-rewards-dot" class="tabn gold hidden">!</b></button>
       <button class="tab" data-tab="rank" title="Classement (5)"><svg class="i"><use href="#i-trophy"/></svg><span class="tl">Classement</span></button>
+      <button class="tab" data-tab="news" title="Nouveautés"><svg class="i"><use href="#i-spark"/></svg><span class="tl">Nouveautés</span></button>
       <button class="tab" data-tab="stats" title="Statistiques (6)"><svg class="i"><use href="#i-chart"/></svg><span class="tl">Statistiques</span></button>
     </nav>
     <div class="rail-foot">
@@ -118,8 +120,9 @@
         </span>
         <span class="userwrap">
           <button id="btn-user" class="userbtn" aria-haspopup="true" aria-expanded="false">
-            <span id="me-initial" class="avatar initial hidden" aria-hidden="true"></span>
-            <img id="me-avatar" class="avatar hidden" alt="" referrerpolicy="no-referrer">
+            <span id="me-ring" class="avring" style="--p:0"><span id="me-initial" class="avatar initial hidden" aria-hidden="true"></span>
+            <img id="me-avatar" class="avatar hidden" alt="" referrerpolicy="no-referrer"></span>
+            <b id="me-lvl" class="lvchip num hidden"></b>
             <span id="me-name" class="name"></span>
             <svg class="i chev"><use href="#i-chev"/></svg>
           </button>
@@ -296,6 +299,8 @@
       <div id="t-list" class="tlist"></div>
     </section>
 
+    <section id="tab-season" class="tabpane wide hidden"><div id="sp-body"></div></section>
+    <section id="tab-news" class="tabpane hidden"><div id="news-body"></div></section>
     <section id="tab-fusion" class="tabpane hidden"><div id="fu-body"></div></section>
     <section id="tab-arena" class="tabpane hidden">
 
@@ -371,6 +376,8 @@
 <script src="rewards.js"></script>
 <script src="fusion.js"></script>
 <script src="tags.js"></script>
+<script src="season.js"></script>
+<script src="news.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

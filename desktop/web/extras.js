@@ -75,6 +75,7 @@ function provText(m) { // d'où vient cet exemplaire
   if (m.via === "echange") return `Reçue par échange${m.from ? ` avec ${m.from}` : ""}${when}`;
   return `Obtenue${when}`;
 }
+const pl = (n, w) => `${fmt(n)} ${w}${n > 1 ? "s" : ""}`;
 function sheetNodes(c, d) {
   const kids = [], article = [];
   if (d.extract) {
@@ -89,6 +90,8 @@ function sheetNodes(c, d) {
     : el("p", { class: "muted", text: "Tu ne possèdes pas encore cette carte." }));
   if (acts) kids.push(acts); // juste après tes exemplaires : c'est ce qu'on vient faire ici
   kids.push(...article);
+  if (d.population) kids.push(el("p", { class: "popu" }, icon("cards"), el("span", {}, "Dans le jeu : ",
+    d.population.copies ? [el("b", { text: pl(d.population.copies, "exemplaire") }), ` chez ${pl(d.population.players, "joueur")}${d.population.shiny ? `, dont ${pl(d.population.shiny, "chromatique")}` : ""}`] : "aucun exemplaire pour l'instant")));
   [d.friends.length && `Chez ${d.friends.length > 1 ? "tes amis" : "ton ami"} : ${d.friends.join(", ")}`,
     d.guild.length && `Dans ta guilde : ${d.guild.join(", ")}`,
     d.friend_wishes.length && `${d.friend_wishes.length > 1 ? "Tes amis la souhaitent" : "Ton ami la souhaite"} : ${d.friend_wishes.join(", ")}`,

@@ -21,7 +21,7 @@ from wikipick.service import Service  # noqa: E402
 
 OPENABLE_HOSTS = ("wikipedia.org", "wiki-pick.com")
 TITLE = "Wiki-Pick Desktop"
-INK = "#07090e"  # = --ink dans web/style.css : pas de flash de couleur à l'ouverture
+INK = "#06100d"  # = --ink dans web/style.css : pas de flash de couleur à l'ouverture
 
 
 def resource_path(rel):

@@ -6,7 +6,7 @@
 
 Collection, paquets, marché aux enchères en direct, échanges, guilde, messagerie, récompenses… dans une interface sombre, sobre et rapide.
 
-<img src="docs/screenshots/web-collection.jpg" alt="Collection, version web sur téléphone" width="260"> &nbsp; <img src="docs/screenshots/web-reveal.jpg" alt="Ouverture d'un paquet" width="260"> &nbsp; <img src="docs/screenshots/web-market.jpg" alt="Marché en direct" width="260">
+<img src="docs/screenshots/web-collection.jpg" alt="Collection, version web sur téléphone" width="260"> &nbsp; <img src="docs/screenshots/web-reveal.jpg" alt="Ouverture d'un paquet" width="260"> &nbsp; <img src="docs/screenshots/web-season.jpg" alt="Season Pass" width="260">
 
 </div>
 
@@ -42,10 +42,12 @@ Ce qui change concrètement :
 
 <p>
 <img src="docs/screenshots/web-rewards.jpg" alt="Récompenses et série de connexion" width="240"> &nbsp;
-<img src="docs/screenshots/web-guild.jpg" alt="Guilde" width="240">
+<img src="docs/screenshots/web-guild.jpg" alt="Guilde" width="240"> &nbsp;
+<img src="docs/screenshots/web-market.jpg" alt="Marché en direct" width="240">
 </p>
 <img src="docs/screenshots/web-desktop-messages.jpg" alt="Messagerie sur grand écran" width="720">
 
+- **Season Pass** : les cinquante niveaux, la récompense choisie en grand, un clic pour la récupérer ; ton niveau tourne autour de ta photo. **Nouveautés** : un onglet pour relire les mises à jour d'Alt-WikiPick. Sur la fiche d'une carte : combien d'exemplaires existent déjà dans le jeu.
 - **Marché en liste** (vue compacte, en plus de la grille) ; **notifications lues** dès qu'on ouvre la cloche ; étiquettes, cartes masquées, tri par date d'obtention.
 - **Mobile d'abord** : onglets en bas à portée de pouce, feuilles modales qui montent du bas, champs qui ne déclenchent pas le zoom d'iOS, zones de sécurité (encoche, barre d'accueil) respectées. Sur grand écran, les onglets deviennent une colonne à gauche.
 - **Installable** (PWA) : ajoute-la à l'écran d'accueil ; l'interface s'ouvre instantanément, même avec un réseau lent.
@@ -97,6 +99,8 @@ Au premier lancement, Windows SmartScreen peut afficher « Windows a protégé v
 | **Arène** | Combats à deux en direct, decks, Mini-Pack. |
 | **Communauté** | Messagerie, amis (favoris, blocage), profils avec collection et vitrines, guilde (fil, tchat, membres, demandes). |
 | **Récompenses** | Série de connexion sur 7 jours, quêtes du jour, quêtes de bienvenue, succès. |
+| **Season Pass** | 50 niveaux, une récompense par niveau (paquets, Wikiki, dos, cadres, cartes exclusives, paquets légendaires…). Récupérer, mettre un dos ou un cadre gagné. Les récompenses réservées aux abonnés WIKI-PRO le restent : Alt-WikiPick ne les récupère pas à ta place. Le signal d'activité du site (XP au temps passé) n'est pas envoyé. |
+| **Nouveautés** | Les notes de version d'Alt-WikiPick ; un lien vers celles du jeu. |
 | **Et aussi** | Classement, statistiques, doublons recyclables et corbeille, recherche rapide `Ctrl+K`, raccourcis `1`–`9`, sons optionnels, export CSV. |
 
 <table>
@@ -106,7 +110,7 @@ Au premier lancement, Windows SmartScreen peut afficher « Windows a protégé v
 </tr>
 <tr>
 <td><img src="docs/screenshots/market.jpg" alt="Marché en direct"></td>
-<td><img src="docs/screenshots/rewards.jpg" alt="Récompenses et série de connexion"></td>
+<td><img src="docs/screenshots/season.jpg" alt="Season Pass"></td>
 </tr>
 </table>
 

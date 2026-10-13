@@ -48,6 +48,6 @@
   .sw.sm button { width: 22px; height: 22px; }
   .sw button.on { border-color: var(--ivory); box-shadow: 0 0 0 2px var(--ink-1) inset; }
   .list { display: grid; gap: 14px; margin: 16px 0 0; padding: 0; list-style: none; }
-  .list li { display: grid; gap: 10px; padding: 12px; background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: var(--rad-m); }
+  .list li { display: grid; gap: 10px; padding: 12px; background: rgba(228, 197, 133, .03); border: 1px solid var(--line); border-radius: var(--rad-m); }
   .acts { display: flex; gap: 8px; }
 </style>

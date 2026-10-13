@@ -58,7 +58,7 @@
   .table { background: rgba(255, 255, 255, .015); border: 1px solid var(--line); border-radius: var(--rad-l); overflow: hidden; }
   .row-r { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 12px; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--line); }
   .row-r:last-child { border-bottom: 0; }
-  .row-r.me { background: linear-gradient(90deg, rgba(241, 232, 212, .09), transparent 70%); box-shadow: inset 3px 0 0 var(--ivory); }
+  .row-r.me { background: linear-gradient(90deg, rgba(228, 197, 133, .09), transparent 70%); box-shadow: inset 3px 0 0 var(--ivory); }
   .rk { font-size: 20px; color: var(--muted); }
   .top3 .rk { font-size: 26px; font-weight: 600; }
   .top3:nth-child(1) .rk { color: var(--gold); text-shadow: 0 0 18px rgba(227, 189, 108, .5); } .top3:nth-child(2) .rk { color: #d5dbe6; } .top3:nth-child(3) .rk { color: #d59a6a; }

@@ -150,7 +150,7 @@
   .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; } .acts:empty { display: none; }
   .tab { margin-top: 14px; display: grid; gap: 10px; }
   .tx { display: grid; flex: 1; min-width: 0; } .nm { padding: 0; background: none; border: 0; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; overflow-wrap: anywhere; } .tx small { font-size: 12.5px; }
-  .item { flex-wrap: wrap; } .item.me { background: linear-gradient(90deg, rgba(241, 232, 212, .08), transparent 70%); border-color: rgba(241, 232, 212, .2); } .rk { width: 22px; color: var(--muted); font-size: 18px; text-align: center; }
+  .item { flex-wrap: wrap; } .item.me { background: linear-gradient(90deg, rgba(228, 197, 133, .08), transparent 70%); border-color: rgba(228, 197, 133, .2); } .rk { width: 22px; color: var(--muted); font-size: 18px; text-align: center; }
   .gf { display: flex; gap: 14px; padding: 14px; background: rgba(255, 255, 255, .02); border: 1px solid var(--line); border-radius: var(--rad-l); } .fc { flex: none; width: 96px; } .fb { flex: 1; min-width: 0; display: grid; gap: 5px; align-content: start; }
   .ft { font: 500 16px/1.35 var(--serif); } .fs { font-size: 12.5px; } .fa { display: flex; align-items: center; gap: 8px; margin-top: 2px; } .pts { color: var(--gold); font: 600 14px var(--serif); }
   .pact { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; color: var(--muted); font: 500 13px var(--sans); cursor: pointer; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); border-radius: 99px; }

@@ -156,12 +156,12 @@
   .scopes { margin-bottom: 12px; }
   .bar { display: flex; gap: 10px; }
   .search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; color: var(--faint); background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; }
-  .search:focus-within { color: var(--text); border-color: rgba(241, 232, 212, .5); }
+  .search:focus-within { color: var(--text); border-color: rgba(228, 197, 133, .5); }
   .search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: 16px var(--sans); }
   .bar select { width: 150px; flex: none; }
   .chips { display: flex; gap: 8px; margin: 12px calc(var(--gut) * -1) 0; padding: 0 var(--gut) 4px; overflow-x: auto; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
-  .chip { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 13px 0 11px; color: var(--muted); font: 500 13.5px var(--sans); cursor: pointer; background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: 99px; }
+  .chip { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 13px 0 11px; color: var(--muted); font: 500 13.5px var(--sans); cursor: pointer; background: rgba(228, 197, 133, .03); border: 1px solid var(--line); border-radius: 99px; }
   .chip::before { content: ""; width: 8px; height: 8px; transform: rotate(45deg); border-radius: 2px; background: var(--c); box-shadow: 0 0 8px -1px var(--c); }
   .chip.on { color: var(--text); background: color-mix(in srgb, var(--c) 14%, transparent); border-color: color-mix(in srgb, var(--c) 55%, transparent); }
   .count { margin: 12px 2px; font-size: 13px; }

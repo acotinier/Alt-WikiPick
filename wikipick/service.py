@@ -10,12 +10,13 @@ import threading
 import time
 from pathlib import Path
 
+from .changelog import news as _news
 from .client import BASE, ApiError, SessionExpired
 from .export import collection_csv
 from .live import LiveStream
 from .parse import (FUSION_RANKS, compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
                     parse_combat_info, parse_corbeille, parse_decks, parse_defi, parse_duel, parse_friends, parse_fusion, parse_history,
-                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_tags, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
+                    parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_season, parse_tags, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
 from .social import (parse_achievements, parse_claim, parse_conversations, parse_friend_lists, parse_guild, parse_guilds,
                      parse_player_cards, parse_profile, parse_rewards_state, parse_thread, parse_user_search)
 from .store import JsonStore
@@ -50,7 +51,7 @@ def safe_me(me, info):
     elif not (isinstance(avatar, str) and avatar.startswith("https://")):
         avatar = None
     keys = ("id", "name", "coins", "packs", "packMax", "packStock", "packReserve", "next", "cards", "pro", "succes", "aucLive", "aucMax",
-            "unread", "unreadMsg", "trades", "friendReq", "proPack", "paquetOr", "proCards", "defi")
+            "unread", "unreadMsg", "trades", "friendReq", "proPack", "paquetOr", "proCards", "defi", "niveau")
     out = {k: me.get(k) for k in keys}
     out["avatar"] = avatar
     return out
@@ -675,6 +676,54 @@ class Service:
     def fusion_stop(self):
         self._fusion_halt.set()
         return {"ok": True}
+
+    # ---- Season Pass : cinquante niveaux, une récompense par niveau. Le serveur décide de tout ; on affiche, et on récupère sur clic ----
+    def season_get(self):
+        return self._guard(lambda: {"ok": True, **parse_season(self._client.season())})
+
+    def season_take(self, level):
+        """Récupère la récompense d'UN niveau, sur clic. Refusé ici (sans rien envoyer) si le niveau n'est pas atteint, déjà pris, ou réservé
+        aux abonnés WIKI-PRO alors que le joueur ne l'est pas : on ne contourne jamais une réserve payante."""
+        def run():
+            lv = _num(level, "Niveau", 1, 100)
+            st = parse_season(self._client.season())
+            item = next((x for x in st["levels"] if x["level"] == lv), None)
+            if item is None:
+                raise ApiError("Niveau inconnu.")
+            if lv in st["me"]["taken"]:
+                raise ApiError("Cette récompense est déjà récupérée.")
+            if min(lv, st["season"]["levels"]) > st["me"]["level"]:
+                raise ApiError("Ce niveau n'est pas encore atteint.")
+            if lv not in st["season"]["free"] and not st["me"]["subscriber"]:
+                raise ApiError("Cette récompense est réservée aux abonnés WIKI-PRO.")
+            if item["kind"] == "carte" and not item["card"]:
+                raise ApiError("La carte de ce niveau n'est pas encore disponible.")
+            r = self._client.season_take(lv) or {}
+            cards = [expand_pack_card(c) for c in r.get("cards") or [] if isinstance(c, dict)]
+            if cards:  # paquet légendaire ou mythique : ses 20 cartes se retournent comme un paquet doré
+                self._seen_ts = ((r.get("me") or {}).get("revoirTs") or {}).get("or")
+                self._seen_genre = "or"
+                self._record_pack(cards)
+            fu = r.get("fusion") if isinstance(r.get("fusion"), dict) else None
+            return {"ok": True, "title": str(r.get("titre") or item["title"])[:120], "kind": item["kind"], "cards": cards, "mythic": r.get("genre") == "mythique",
+                    "merge": {"from": str(fu.get("de") or "")[:120], "to": str(fu.get("vers") or "")[:120]} if fu else None, "badge": bool(r.get("insigne")),
+                    "state": parse_season(r.get("etat")), "me": safe_me(r["me"], None) if isinstance(r.get("me"), dict) else None}
+        return self._write(f"Season Pass : récompense du niveau {str(level)[:4]}", run)
+
+    def season_equip(self, kind, key):
+        """Met un dos de carte ou un cadre de photo gagné dans le Season Pass (« s1-lagon »)."""
+        def run():
+            if kind not in ("dos", "cadre"):
+                raise ApiError("Choix invalide.")
+            if not (isinstance(key, str) and re.match(r"^s[0-9]{1,3}-[a-z0-9]{1,30}$", key)):
+                raise ApiError("Récompense inconnue.")
+            self._client.season_equip(kind, key)
+            return {"ok": True, "kind": kind, "key": key}
+        return self._write("Season Pass : " + ("dos de carte" if kind == "dos" else "cadre de photo") + " mis", run)
+
+    def news_get(self):
+        """Les notes de version d'Alt-WikiPick (fichier local, aucun appel au site)."""
+        return {"ok": True, **_news()}
 
     # ---- étiquettes : créer, renommer, supprimer, poser sur une carte (lues dans cards.js, jamais observées en vrai) ----
     def tags_get(self):

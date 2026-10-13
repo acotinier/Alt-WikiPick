@@ -25,7 +25,7 @@
   .c { display: grid; place-items: center; aspect-ratio: 1; padding: 20%; cursor: pointer; background: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .015));
     border: 1px solid var(--line-2); border-radius: var(--rad-l); transition: transform .2s var(--spring), border-color .15s, background .15s; }
   .c :global(svg) { width: 100%; height: 100%; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .45)); }
-  .c:hover { transform: translateY(-3px) scale(1.03); border-color: rgba(241, 232, 212, .45); background: rgba(255, 255, 255, .07); }
+  .c:hover { transform: translateY(-3px) scale(1.03); border-color: rgba(228, 197, 133, .45); background: rgba(255, 255, 255, .07); }
   .c:active { transform: scale(.96); }
   .c:disabled { opacity: .3; cursor: default; transform: none; }
   .small { font-size: 12.5px; }

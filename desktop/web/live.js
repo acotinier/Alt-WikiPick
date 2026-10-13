@@ -41,7 +41,7 @@ function startLive() {
   if (LV.timer) return;
   api().start_stream(); resumeArena();
   LV.timer = setInterval(pollLive, 1000);
-  loadNotifs(); loadWatch(); loadHidden();
+  loadNotifs(); loadWatch(); loadHidden(); loadSeasonBg();
 }
 function stopLive() {
   clearInterval(LV.timer); LV.timer = null; LV.ever = false; LV.notifs = []; LV.local = []; LV.localUnread = 0; LV.market.items = []; LV.watching = false;

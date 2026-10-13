@@ -25,7 +25,7 @@ class Collection {
 export const coll = new Collection();
 
 // Ce qui est ouvert par-dessus l'écran courant : la fiche d'une carte, les notifications, le menu du compte.
-export const ui = $state({ card: null, bell: false, menu: false, trade: null, tags: false });
+export const ui = $state({ card: null, bell: false, menu: false, trade: null, tags: false, haul: null });
 export const openCard = (c) => { ui.card = c; };
 export const openTrade = (to, counterOf = null, note = '') => { ui.trade = { to, counterOf, note }; };
 

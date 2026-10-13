@@ -29,5 +29,5 @@ export const SECTIONS = [
   { id: 'social', label: 'Social', icon: 'users', to: '/social/messages',
     subs: [['messages', 'Messages'], ['friends', 'Amis'], ['guild', 'Guilde'], ['arena', 'Arène']] },
   { id: 'me', label: 'Moi', icon: 'user', to: '/me/profile',
-    subs: [['profile', 'Profil'], ['rewards', 'Récompenses'], ['rank', 'Classement'], ['stats', 'Stats']] },
+    subs: [['profile', 'Profil'], ['season', 'Season Pass'], ['rewards', 'Récompenses'], ['rank', 'Classement'], ['stats', 'Stats'], ['news', 'Nouveautés']] },
 ];

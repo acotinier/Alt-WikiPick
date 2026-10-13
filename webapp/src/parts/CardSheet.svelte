@@ -83,6 +83,7 @@
           {#if own}<div><dt>Exemplaires</dt><dd>{own.copies}</dd></div>{/if}
           {#if tagNames.length}<div><dt>Tags</dt><dd>{tagNames.join(', ')}</dd></div>{/if}
           {#if card.shiny}<div><dt>Version</dt><dd>Chromatique</dd></div>{/if}
+          {#if d && d.population}<div><dt>Dans le jeu</dt><dd class="pop">{#if d.population.copies}<b class="num">{fmt(d.population.copies)} exemplaire{d.population.copies > 1 ? 's' : ''}</b> chez {fmt(d.population.players)} joueur{d.population.players > 1 ? 's' : ''}{#if d.population.shiny}, dont {fmt(d.population.shiny)} chromatique{d.population.shiny > 1 ? 's' : ''}{/if}{:else}Aucun exemplaire pour l'instant{/if}</dd></div>{/if}
         </dl>
 
         {#if loading && !d}
@@ -164,8 +165,8 @@
   .desc { font-size: 17px; font-style: italic; color: var(--muted); line-height: 1.4; }
   dl { display: grid; margin: 0; border-top: 1px solid var(--line); }
   dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-  dt { color: var(--muted); } dd { font-weight: 500; text-align: right; }
-  .box { display: grid; gap: 8px; padding: 14px; background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: var(--rad-l); }
+  dt { color: var(--muted); } dd { font-weight: 500; text-align: right; } .pop b { color: var(--ivory); font-weight: 600; }
+  .box { display: grid; gap: 8px; padding: 14px; background: rgba(228, 197, 133, .03); border: 1px solid var(--line); border-radius: var(--rad-l); }
   .box h3, .auct h4 { margin: 0; }
   .copy { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 0; font-size: 14px; }
   .st { padding: 1px 9px; font: 600 11.5px/18px var(--sans); border: 1px solid var(--line-2); border-radius: 99px; white-space: nowrap; }

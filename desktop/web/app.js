@@ -57,7 +57,7 @@ function show(screen) {
 function setSync(text, cls = "") {
   const s = $("sync"); s.textContent = text; s.title = text; s.className = "sync " + cls + (text ? "" : " hidden");
 }
-const TAB_TITLES = { collection: "Collection", packs: "Paquets", fusion: "Fusion", market: "Marché", trades: "Échanges", arena: "Arène", rank: "Classement", stats: "Statistiques",
+const TAB_TITLES = { collection: "Collection", packs: "Paquets", fusion: "Fusion", season: "Season Pass", news: "Nouveautés", market: "Marché", trades: "Échanges", arena: "Arène", rank: "Classement", stats: "Statistiques",
   messages: "Messages", friends: "Amis", guild: "Guilde", profile: "Profil", rewards: "Récompenses" };
 const TABS = Object.keys(TAB_TITLES);
 function setTab(t) {
@@ -71,7 +71,7 @@ function setTab(t) {
   refreshArenaDot();
   if (t === "arena") loadArena(); else if (t === "trades") loadTrades(true); else if (t === "rank") loadRanking(); else if (t === "packs") loadJournal();
   else if (t === "messages") loadMessages(); else if (t === "friends") loadFriends(); else if (t === "guild") loadGuild();
-  else if (t === "profile") loadProfile(); else if (t === "rewards") loadRewards(); else if (t === "fusion") loadFusion();
+  else if (t === "profile") loadProfile(); else if (t === "rewards") loadRewards(); else if (t === "fusion") loadFusion(); else if (t === "season") loadSeason(); else if (t === "news") loadNews();
   if (t !== "packs" && S.dirty) refresh(); // un paquet a été ouvert : la collection a changé
 }
 
@@ -164,7 +164,7 @@ function renderHeader() {
   $("me-name").textContent = me.name || "";
   countTo($("me-coins"), me.coins);
   $("me-packs").textContent = `${me.packs ?? 0}/${me.packMax ?? "?"}`;
-  renderPacks(); tickPacks(); renderBell(); renderSocialBadges();
+  renderPacks(); tickPacks(); renderBell(); renderSocialBadges(); spHeader();
   const tn = $("tab-trades-n"); tn.textContent = me.trades || ""; tn.classList.toggle("hidden", !me.trades); // échanges en attente
   const ini = $("me-initial"); ini.textContent = ([...(me.name || "?")][0] || "?").toUpperCase(); ini.classList.toggle("hidden", !!me.avatar);
   const av = $("me-avatar");

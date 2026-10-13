@@ -10,8 +10,9 @@
 
   let phase = $state('idle'), cards = $state([]), flipped = $state([]), opening = $state(false), ask = $state(null), history = $state([]), shown = $state(6);
   const me = $derived(app.me || {});
-  let batch = $state(null), many = $state(3);
-  const k = $derived(Math.max(2, Math.min(many, me.packs ?? 0, 20)));
+  let batch = $state(null), many = $state(null);   // many : null = le maximum disponible (par défaut)
+  const maxK = $derived(Math.min(me.packs ?? 0, 20));
+  const k = $derived(Math.max(2, Math.min(many ?? maxK, maxK)));
   const n = $derived(me.packs ?? 0);
   const gold = $derived(!!(me.proPack || me.paquetOr));
   const left = $derived(me.next != null ? Math.max(0, Math.ceil(me.next - (tick.now - app.meAt) / 1000)) : null);
@@ -65,6 +66,7 @@
       return toast(r.error || 'Ouverture impossible', 'error');
     }
     app.me = r.me; app.meAt = Date.now();
+    many = null;
     batch = { packs: r.packs.length, wanted: r.wanted, stopped: r.stopped, error: r.error, cards: r.packs.flat().sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.shiny) - Number(a.shiny)) };
     phase = 'batch'; scrollTo({ top: 0 });
     call('pack_seen');
@@ -112,8 +114,9 @@
       <button class="btn primary big" disabled={opening || n < 1} onclick={() => open()}>{opening ? 'Ouverture…' : 'Ouvrir un paquet'}</button>
       {#if n >= 2}
         <div class="many">
-          <div class="stepper"><button aria-label="Moins" disabled={k <= 2} onclick={() => (many = k - 1)}>−</button><b class="num">{k}</b><button aria-label="Plus" disabled={k >= Math.min(n, 20)} onclick={() => (many = k + 1)}>+</button></div>
-          <button class="btn big" disabled={opening} onclick={() => openMany(k)}>Ouvrir {k} paquets d'un coup</button>
+          <div class="mhead"><span>Plusieurs d'un coup</span><div class="stepper"><button aria-label="Moins" disabled={k <= 2} onclick={() => (many = k - 1)}>−</button><b class="num">{k}</b><button aria-label="Plus" disabled={k >= maxK} onclick={() => (many = k + 1)}>+</button></div></div>
+          {#if maxK > 2}<input class="range" type="range" min="2" max={maxK} step="1" value={k} aria-label="Nombre de paquets" oninput={(e) => (many = +e.currentTarget.value)} />{/if}
+          <button class="btn big block" disabled={opening} onclick={() => openMany(k)}>Ouvrir {k} paquets d'un coup</button>
         </div>
       {/if}
       {#if gold}<button class="btn gold big" disabled={opening} onclick={() => open('gold')}>{me.proPack ? 'Paquet PRO du jour' : 'Ton paquet doré offert'} · {plural(me.proCards || 20, 'carte')}</button>{/if}
@@ -135,7 +138,7 @@
     </section>
   {/if}
 {:else}
-  <section class="reveal" style:--n={cards.length} style:--rows={Math.ceil(cards.length / 3)}>
+  <section class="reveal" class:many={cards.length > 6} style:--n={cards.length} style:--rows={Math.ceil(cards.length / 3)}>
     <div class="pcards">
       {#each cards as c, i (c.cid + i)}
         <button class="pcard" class:open={flipped.includes(i)} class:top={isTop(c)} style:--i={i} style:--c={color(c.rarity)} aria-label={flipped.includes(i) ? c.name : 'Retourner la carte'} onclick={() => flip(i)}>
@@ -164,7 +167,7 @@
   .count { font-size: 28px; margin-top: 8px; } .next { min-height: 21px; margin-bottom: 10px; }
   .actions { display: grid; gap: 12px; width: min(340px, 100%); }
   .actions .btn { width: 100%; }
-  .pack-wrap { position: relative; width: 190px; aspect-ratio: 5 / 8; margin: 6px 0 30px; perspective: 900px; animation: bob 5.5s ease-in-out infinite; }
+  .pack-wrap { position: relative; width: clamp(130px, 22dvh, 190px); aspect-ratio: 5 / 8; margin: 6px 0 30px; perspective: 900px; animation: bob 5.5s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-9px); } }
   .pk { position: absolute; inset: 0; filter: drop-shadow(0 26px 26px rgba(0, 0, 0, .55)) drop-shadow(0 0 36px rgba(80, 140, 255, .2)); }
   .pk.under { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .45)) brightness(.7); }
@@ -189,6 +192,11 @@
   @keyframes flash { 0% { opacity: 0; transform: scaleX(.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1.6); } }
 
   /* la révélation tient dans l'écran, sans défilement : les cartes prennent la place restante (3 par rangée, 1 rangée dès 700 px) */
+  .reveal.many { height: auto; display: grid; gap: 14px; justify-items: stretch; padding-bottom: calc(var(--nav) + var(--sab) + 70px); }
+  .reveal.many .pcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-content: start; container-type: normal; perspective: 1400px; }
+  .reveal.many .pcard { width: auto; }
+  .reveal.many .pbar, .reveal.many .end { position: sticky; bottom: calc(var(--nav) + var(--sab) + 10px); z-index: 5; height: auto; padding: 12px 14px; background: var(--glass); backdrop-filter: blur(14px); border: 1px solid var(--line-2); border-radius: 16px; }
+  .reveal.many .end { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; animation: none; } .reveal.many .end p { font-size: 15px; text-align: center; } .reveal.many .end .row { flex-wrap: nowrap; }
   .reveal { --bot: calc(var(--nav) + var(--sab)); --cols: 3; --rws: var(--rows); --gap: 12px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
     height: max(360px, calc(100dvh - var(--top) - var(--sat) - var(--bot) - 132px)); }
@@ -201,7 +209,7 @@
   .front { transform: rotateY(180deg); }
   .front :global(.card) { position: absolute; inset: 0; aspect-ratio: auto; content-visibility: visible; }
   .back { display: grid; place-items: center; border: 1px solid var(--line-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 20px 40px -20px rgba(0, 0, 0, .9);
-    background: radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, .08), transparent 55%), repeating-linear-gradient(45deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 9px), linear-gradient(160deg, #1b2c52, #0c1730 60%, #0a1226); }
+    background: radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, .08), transparent 55%), repeating-linear-gradient(45deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 9px), linear-gradient(160deg, #1f4034, #0c211a 60%, #08160f); }
   .back b { font-size: 32px; color: rgba(255, 255, 255, .2); }
   .pcard.top:not(.open) .back { animation: aura 2.2s ease-in-out infinite; border-color: rgba(160, 210, 255, .4); }
   @keyframes aura { 50% { box-shadow: 0 0 34px 4px rgba(120, 200, 255, .45), inset 0 1px 0 rgba(255, 255, 255, .12); } }
@@ -212,10 +220,12 @@
   .trk { flex: 1; height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; } .trk i { display: block; height: 100%; background: var(--ivory); transition: width .4s var(--ease); }
   .end { display: grid; gap: 18px; text-align: center; animation: rise .5s var(--ease); } .end { gap: 12px; } .end p { font-size: 16px; line-height: 1.3; max-width: 40ch; }
 
-  .many { display: flex; align-items: center; gap: 10px; } .many .btn { flex: 1; }
+  .many { display: grid; gap: 12px; width: 100%; padding: 14px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 16px; }
+  .mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
+  .range { width: 100%; height: 28px; accent-color: var(--ivory); }
   .stepper { display: flex; align-items: center; gap: 2px; padding: 3px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }
-  .stepper button { width: 36px; height: 40px; color: var(--text); font: 600 20px var(--sans); background: none; border: 0; border-radius: 9px; cursor: pointer; } .stepper button:disabled { opacity: .35; cursor: default; }
-  .stepper b { min-width: 28px; text-align: center; font: 600 18px var(--serif); }
+  .stepper button { width: 38px; height: 38px; color: var(--text); font: 600 20px var(--sans); background: none; border: 0; border-radius: 9px; cursor: pointer; } .stepper button:disabled { opacity: .35; cursor: default; }
+  .stepper b { min-width: 34px; text-align: center; font: 600 19px var(--serif); color: var(--ivory); }
   .batch { display: grid; gap: 14px; } .batch .note { padding: 10px 12px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
   .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; }
   .journal { margin-top: 10px; } .small { font-size: 12.5px; }
@@ -223,8 +233,10 @@
   .lab { display: inline-flex; align-items: center; gap: 9px; } .lab::before { content: ""; width: 7px; height: 7px; transform: rotate(45deg); background: var(--c); box-shadow: 0 0 8px var(--c); }
   .hrow { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); } .hrow small { flex: none; width: 92px; }
   .minis { display: flex; flex-wrap: wrap; gap: 7px; }
-  .mini { position: relative; width: 40px; aspect-ratio: 5 / 7; padding: 0; overflow: hidden; border: 1px solid var(--c); border-radius: 6px; background: #04060a; box-shadow: 0 0 12px -6px var(--c); cursor: pointer; }
+  .mini { position: relative; width: 40px; aspect-ratio: 5 / 7; padding: 0; overflow: hidden; border: 1px solid var(--c); border-radius: 6px; background: #030b08; box-shadow: 0 0 12px -6px var(--c); cursor: pointer; }
   .mini img { width: 100%; height: 100%; object-fit: cover; } .mini.new::after { content: ""; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--ivory); }
-  @media (min-width: 700px) { .reveal { --cols: var(--n); --rws: 1; --gap: 18px; width: min(1000px, calc(100vw - 2 * var(--gut))); margin-left: 50%; transform: translateX(-50%); } .pack-wrap { width: 220px; } }
+  @media (min-width: 700px) { .reveal.many .pcards { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; } .reveal.many { width: min(1000px, calc(100vw - 2 * var(--gut))); margin-left: 50%; transform: translateX(-50%); } }
+  @media (min-width: 700px) { .reveal:not(.many) { --cols: var(--n); --rws: 1; --gap: 18px; width: min(1000px, calc(100vw - 2 * var(--gut))); margin-left: 50%; transform: translateX(-50%); } .pack-wrap { width: 220px; } }
+  @media (min-width: 980px) { .reveal.many { width: min(1000px, calc(100vw - var(--rail) - 2 * var(--gut))); } .reveal.many .pbar, .reveal.many .end { bottom: 14px; } }
   @media (min-width: 980px) { .reveal { --bot: 0px; width: min(1000px, calc(100vw - var(--rail) - 2 * var(--gut))); } }
 </style>

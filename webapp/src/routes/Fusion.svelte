@@ -177,7 +177,7 @@
   .chips { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
   .chips::-webkit-scrollbar { display: none; }
   .chip { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 13px 0 11px; color: var(--muted); font: 500 13.5px var(--sans); cursor: pointer;
-    background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: 99px; transition: all .18s var(--ease); }
+    background: rgba(228, 197, 133, .03); border: 1px solid var(--line); border-radius: 99px; transition: all .18s var(--ease); }
   .chips .chip::before { content: ""; width: 8px; height: 8px; transform: rotate(45deg); border-radius: 2px; background: var(--c); box-shadow: 0 0 8px -1px var(--c); }
   .chip small { color: var(--faint); font-size: 12px; }
   .chip.on { color: var(--text); background: color-mix(in srgb, var(--c) 14%, transparent); border-color: color-mix(in srgb, var(--c) 55%, transparent); }
@@ -190,7 +190,7 @@
   .row { display: grid; gap: 10px; }
   .n { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
   .n input { min-height: 46px; padding: 0 14px; color: var(--text); font: 600 22px var(--serif); background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; outline: 0; }
-  .n input:focus { border-color: rgba(241, 232, 212, .5); box-shadow: 0 0 0 3px rgba(241, 232, 212, .1); }
+  .n input:focus { border-color: rgba(228, 197, 133, .5); box-shadow: 0 0 0 3px rgba(228, 197, 133, .1); }
   .quick { display: flex; gap: 8px; flex-wrap: wrap; }
   .opts { grid-template-columns: 1fr; align-items: center; }
   .sz { display: flex; gap: 2px; padding: 3px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; }

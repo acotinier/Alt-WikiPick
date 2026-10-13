@@ -56,7 +56,7 @@
 
 <style>
   .search { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; color: var(--faint); background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; }
-  .search:focus-within { color: var(--text); border-color: rgba(241, 232, 212, .5); }
+  .search:focus-within { color: var(--text); border-color: rgba(228, 197, 133, .5); }
   .search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: 16px var(--sans); }
   .found { margin-top: 10px; } .note { margin-top: 10px; font-size: 13.5px; }
   .who { padding: 0; background: none; border: 0; color: var(--text); font-size: 17px; font-weight: 600; cursor: pointer; text-align: left; overflow-wrap: anywhere; min-width: 0; }

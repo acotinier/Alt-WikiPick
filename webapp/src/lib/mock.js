@@ -41,6 +41,8 @@ function stats(cards) {
 const card = (i, r, extra) => { const a = ARTICLES[i % ARTICLES.length]; return { cid: 'fr:' + a[0], name: a[1], desc: a[2], img: a[3], rarity: r, reads: 5000 + i * 1111, shiny: false, copies: 1, locked: false, tags: [], ids: [], url: 'https://fr.wikipedia.org/wiki/' + a[0], new: false, ...extra }; };
 
 const S = {
+  gold: localStorage.getItem('mock-gold') === '1',
+  season: { level: 12, taken: [3, 5], sub: false },
   job: null, hidden: [], tags: [{ id: 7, name: 'Peintres', color: '#8b5cf6' }, { id: 8, name: 'À échanger', color: '#22c55e' }],
   fus: { n: 0, stock: Array.from({ length: 60 }, (_, i) => ({ ...card(i, 'C'), id: 5000 + i, ids: [5000 + i], copies: i < 45 ? 2 : 1 })) },
   logged: localStorage.getItem('mock-logged') !== '0',
@@ -63,9 +65,25 @@ function fusionState(rank, page) {
       .map(([r, to, b, b2, avail]) => ({ rank: r, to, base: b, base2: b2, chance: b, chance2: b2, fails: 0, avail })) };
 }
 
+function seasonState() {
+  const L = S.season, kinds = ['paquets', 'wikiki', 'dos', 'paquets', 'carte', 'dore', 'wikiki', 'cadre', 'skin', 'legende'];
+  const rar = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+  const levels = Array.from({ length: 50 }, (_, i) => {
+    const n = i + 1, kind = n === 25 ? 'mythique' : n % 10 === 0 ? 'legende' : kinds[(n * 7) % kinds.length];
+    const base = { level: n, kind, title: { paquets: `${(n % 3) + 1} paquets`, wikiki: `${n * 40} Wikiki`, dos: 'Dos « Lagon »', carte: 'Carte exclusive', dore: 'Paquet doré', cadre: 'Cadre en laiton', skin: 'Skin « Givre »', legende: 'Paquet légendaire', mythique: 'Paquet mythique' }[kind],
+      text: kind === 'legende' ? 'Vingt cartes, dont une légendaire garantie.' : 'Une récompense de la saison.', n: kind === 'paquets' ? (n % 3) + 1 : kind === 'wikiki' ? n * 40 : 1, key: kind === 'dos' ? 'lagon' : kind === 'cadre' ? 'laiton' : '', xp: n * 100,
+      rarity: rar[Math.min(5, Math.floor(n / 9))], card: null, bonus: false, badge: false };
+    if (kind === 'carte' && n !== 45) base.card = card(n, 'L');
+    return base;
+  });
+  return { ok: true, season: { key: 's1', name: 'Saison 1', levels: 50, open: true, future: false, left: 86400 * 21 + 3600 * 5, in: 0, free: [3, 5, 8, 12, 14, 18, 24, 26, 29, 32, 37, 39, 42, 47] },
+    me: { level: L.level, xp: L.level * 100 + 40, xp_level: L.level * 100, xp_next: (L.level + 1) * 100, subscriber: L.sub, taken: L.taken, active_minutes: 0 }, levels,
+    rules: { pack: 10, gold_pack: 30, market_first: 3, bid: 5, sale: 5, bid_after: 1, market_hour: 4, wbc: 50, active_xp: 2, active_every: 5, active_max: 60, cards: { PC: 1, R: 3, SR: 8, UR: 20, L: 50, M: 150 }, shiny: 20 } };
+}
+
 function me() {
   return { id: 1, name: 'Alex', coins: S.coins, packs: S.packs, packMax: 10, packReserve: S.packs, next: 423, cards: S.cards.length, pro: false, succes: 1, aucLive: 0, aucMax: 5,
-    unread: S.unread, unreadMsg: S.unreadMsg, trades: S.trades, friendReq: S.incoming.length, proPack: 0, paquetOr: 0, proCards: 20, defi: S.defi, avatar: null };
+    niveau: S.season.level, unread: S.unread, unreadMsg: S.unreadMsg, trades: S.trades, friendReq: S.incoming.length, proPack: 0, paquetOr: S.gold ? 1 : 0, proCards: 20, defi: S.defi, avatar: null };
 }
 const rewards = () => ({ quests: S.quests, welcome: S.welcome, streak: S.streak, guild_chat: { guild: 3, last: 10, seen: 8 } });
 const INFO = { odds: { M: 0.1, L: 0.5, UR: 2, SR: 8, R: 30, PC: 70, C: 100 }, bank: { C: 1, PC: 3, R: 10, SR: 40, UR: 100, L: 500, M: 2000 }, shinyOdds: 0.2, perPack: 5 };
@@ -97,7 +115,7 @@ const H = {
   prefs_set: (k, v) => { S.prefs[k] = v; return { ok: true }; },
   watch_get: () => ({ ok: true, list: S.watch }),
   watch_set: (cid, name, on) => { S.watch = S.watch.filter((w) => w.cid !== cid); if (on) S.watch.push({ cid, name }); return { ok: true, list: S.watch }; },
-  load_card: (cid) => ({ ok: true, extract: "La Joconde est un portrait peint à l’huile sur panneau de peuplier par Léonard de Vinci au début du XVIe siècle. Exposé au musée du Louvre depuis 1797, ce tableau est l’une des œuvres d’art les plus célèbres au monde. Son sourire énigmatique, son clair-obscur et la profondeur de son paysage en font un sommet de la Renaissance italienne. Elle est conservée derrière une vitre blindée, dans la salle des États, et attire plusieurs millions de visiteurs chaque année.",
+  load_card: (cid) => ({ ok: true, population: { copies: 1284, players: 311, shiny: 9 }, extract: "La Joconde est un portrait peint à l’huile sur panneau de peuplier par Léonard de Vinci au début du XVIe siècle. Exposé au musée du Louvre depuis 1797, ce tableau est l’une des œuvres d’art les plus célèbres au monde. Son sourire énigmatique, son clair-obscur et la profondeur de son paysage en font un sommet de la Renaissance italienne. Elle est conservée derrière une vitre blindée, dans la salle des États, et attire plusieurs millions de visiteurs chaque année.",
     mine: (S.cards.find((c) => c.cid === cid) || { ids: [] }).ids.map((id, i) => ({ id, for_sale: false, state: i === 1 ? 'locked' : 'free', shiny: false, via: i ? 'paquet' : 'enchere', ts: now() - 86400 * (3 + i), price: i ? null : 250, from: i ? '' : 'Bob', lot: false })),
     wished: false, friends: ['Camille', 'Inès'], guild: ['Ada'], friend_wishes: ['Théo'], auctions: [auc(31, { card: card(4, 'L'), ends_at: now() + 120 })] }),
   recycle: (ids) => { S.coins += 40 * ids.length; return { ok: true, gain: 40 * ids.length, sold: ids.length, locked: 0 }; },
@@ -112,6 +130,11 @@ const H = {
     S.defi = false; S.packs = Math.max(0, S.packs - 1); S.packsOpened++;
     const pk = (i, r, sh, nw) => card(i, r, { shiny: sh, new: nw, ids: [i + 1] });
     return { ok: true, me: me(), cards: [pk(10, 'C', false, false), pk(6, 'PC', false, true), pk(14, 'R', false, false), pk(3, 'SR', false, true), pk(4, 'L', true, true)] };
+  },
+  open_gold_pack: () => {
+    S.gold = false;
+    const cards = Array.from({ length: 20 }, (_, i) => card(i + 2, i === 19 ? 'L' : ['C', 'C', 'PC', 'R'][i % 4], { new: i % 6 === 0, ids: [i + 1] }));
+    return { ok: true, cards, me: me() };
   },
   pack_seen: () => ({ ok: true }),
   pack_history: () => ({ ok: true, packs: [{ ts: now() - 3600, gold: false, cards: [card(1, 'C'), card(2, 'PC', { new: true }), card(5, 'SR'), card(7, 'C'), card(9, 'R')] }] }),
@@ -177,6 +200,21 @@ const H = {
   combat_state: () => ({ ok: true, defi: null }),
   actions_get: () => ({ ok: true, actions: S.log }),
   exclusive_hide: (id, on) => { S.masked = (S.masked || []).filter((i) => i !== id); if (on === true) S.masked.push(id); return { ok: true, masked: on === true }; },
+  season_get: () => seasonState(),
+  season_take: (lv) => {
+    const st = seasonState(), it = st.levels.find((x) => x.level === lv);
+    if (!it) return { ok: false, error: 'Niveau inconnu.' };
+    if (S.season.taken.includes(lv)) return { ok: false, error: 'Cette récompense est déjà récupérée.' };
+    if (lv > S.season.level) return { ok: false, error: "Ce niveau n'est pas encore atteint." };
+    if (!st.season.free.includes(lv) && !S.season.sub) return { ok: false, error: 'Cette récompense est réservée aux abonnés WIKI-PRO.' };
+    S.season.taken.push(lv);
+    const cards = it.kind === 'legende' || it.kind === 'mythique' ? Array.from({ length: 20 }, (_, i) => card(i + 3, i === 19 ? (it.kind === 'mythique' ? 'M' : 'L') : ['C', 'C', 'PC', 'R'][i % 4], { new: i % 5 === 0, ids: [i + 1] })) : [];
+    return { ok: true, title: it.title, kind: it.kind, cards, mythic: it.kind === 'mythique', merge: null, badge: false, state: seasonState(), me: me() };
+  },
+  season_equip: (kind, key) => ({ ok: true, kind, key }),
+  news_get: () => ({ ok: true, site_url: 'https://wiki-pick.com/nouveautes', versions: [
+    { version: '0.4.0', date: '2026-10-13', title: 'Season Pass, niveaux et nouveau design', items: [{ kind: 'new', text: 'Season Pass : cinquante niveaux, une récompense par niveau.' }, { kind: 'fix', text: 'Les paquets de 20 cartes s’affichent en grille lisible.' }] },
+    { version: '0.3.0', date: '2026-10-08', title: 'Fusion, étiquettes et paquets groupés', items: [{ kind: 'new', text: 'Fusion de cartes, à la main ou en lot.' }, { kind: 'better', text: 'Notifications lues à l’ouverture de la cloche.' }] }] }),
   tags_get: () => ({ ok: true, tags: S.tags }),
   tag_save: (id, name, color) => {
     if (!name || !name.trim() || name.length > 20) return { ok: false, error: "Le nom d'une étiquette fait de 1 à 20 caractères." };

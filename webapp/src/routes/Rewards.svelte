@@ -149,18 +149,18 @@
   .track i { display: block; height: 100%; background: linear-gradient(90deg, #ff8c3c, var(--gold)); box-shadow: 0 0 12px #ff8c3c; transition: width .6s var(--ease); }
   .days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .days.closed { opacity: .5; filter: saturate(.4); }
-  .day { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 6px 10px; min-height: 124px; text-align: center; background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-radius: 14px; }
+  .day { position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 6px 10px; min-height: 124px; text-align: center; background: rgba(228, 197, 133, .03); border: 1px solid var(--line); border-radius: 14px; }
   .day.done { background: rgba(70, 201, 152, .06); border-color: rgba(70, 201, 152, .3); }
   .day.today { border-color: rgba(255, 170, 90, .55); background: rgba(255, 140, 60, .08); }
   .day.ready { animation: dready 2s ease-in-out infinite; }
   @keyframes dready { 50% { box-shadow: 0 0 0 4px rgba(255, 170, 90, .12), 0 0 28px -6px rgba(255, 140, 60, .7); } }
-  .day.grand { grid-column: span 2; background: radial-gradient(90% 90% at 50% 20%, rgba(227, 189, 108, .16), transparent 70%), rgba(255, 255, 255, .025); border-color: rgba(227, 189, 108, .4); }
+  .day.grand { grid-column: span 2; background: radial-gradient(90% 90% at 50% 20%, rgba(227, 189, 108, .16), transparent 70%), rgba(228, 197, 133, .03); border-color: rgba(227, 189, 108, .4); }
   .tag { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 0 8px; font: 700 10.5px/16px var(--sans); font-style: normal; white-space: nowrap; color: #1d1506; background: var(--gold); border-radius: 99px; }
   .tag.now { background: #ffb45c; }
   .dn { font: 600 12.5px var(--sans); letter-spacing: .08em; font-variant-caps: all-small-caps; color: var(--muted); }
   .dic { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; font-size: 22px; color: var(--ivory); background: rgba(255, 255, 255, .05); }
   .dic.k-wikiki { color: var(--gold); } .dic.k-dore { color: #1d1506; background: linear-gradient(160deg, #ffe3a1, var(--gold) 55%, #b98a35); } .dic.k-minipack { color: #9ecbff; }
-  .dcard { width: 36px; aspect-ratio: 5 / 7; border: 1px solid var(--c); border-radius: 6px; background: #04060a center / cover no-repeat; box-shadow: 0 0 16px -4px var(--c); }
+  .dcard { width: 36px; aspect-ratio: 5 / 7; border: 1px solid var(--c); border-radius: 6px; background: #030b08 center / cover no-repeat; box-shadow: 0 0 16px -4px var(--c); }
   .dt { font-size: 12px; line-height: 1.3; }
   .ok { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; color: #062b1d; background: var(--good); }
   footer { display: grid; } .fine { font-size: 12.5px; }

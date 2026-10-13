@@ -203,6 +203,16 @@ class WikiPickClient:
         """UNE fusion (2 ou 3 cartes du même rang). Elle peut rater : les cartes sont alors perdues. Jamais rejouée."""
         return self._post_json("/api/fusion", {"ids": ids, "page": page})
 
+    # ---- Season Pass (lu dans saison.js ; `/api/saison/actif`, le signal d'activité qui rapporte de l'XP, n'est volontairement PAS appelé) ----
+    def season(self):
+        return self._get_json("/api/saison?p=3")
+
+    def season_take(self, level):
+        return self._post_json("/api/saison/prendre", {"niveau": level})
+
+    def season_equip(self, kind, key):
+        return self._post_json("/api/saison/" + ("dos" if kind == "dos" else "cadre"), {("dos" if kind == "dos" else "cadre"): key})
+
     def exclusive_hide(self, card_id, on):
         """Masque (ou non) une carte exclusive sur ton profil : elle reste à toi, grisée dans ta collection."""
         return self._post_json("/api/card/exclusive/masquer", {"card_id": card_id, "on": bool(on)})

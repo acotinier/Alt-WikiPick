@@ -80,7 +80,7 @@
   .fine { font-size: 12.5px; margin: 10px 2px 14px; }
   .trade { display: grid; gap: 12px; padding: 16px; background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)); border: 1px solid var(--line); border-radius: var(--rad-xl); }
   header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } header b { font-size: 18px; display: block; } header small { font-size: 12.5px; }
-  .st.pending { color: var(--ivory); border-color: rgba(241, 232, 212, .35); } .st.accepted { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+  .st.pending { color: var(--ivory); border-color: rgba(228, 197, 133, .35); } .st.accepted { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
   .st.declined, .st.cancelled, .st.invalid { color: #ff8d97; border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
   .msg { font-size: 17px; font-style: italic; color: #cfd5df; }
   .warn { padding: 9px 14px; border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); border-radius: 0 8px 8px 0; }

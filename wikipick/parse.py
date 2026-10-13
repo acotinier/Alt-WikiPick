@@ -263,6 +263,48 @@ def _names(v):
     return [str(n) for n in v if isinstance(n, str)][:50] if isinstance(v, list) else []
 
 
+SEASON_GENRES = ("paquets", "dore", "wikiki", "dos", "carte", "skin", "cadre", "vitrine", "fond", "legende", "mythique")
+
+
+def parse_season(d):
+    """Season Pass (`GET /api/saison`, et `etat` de `POST /api/saison/prendre`) -> dict lisible. Forme lue dans saison.js du site (jamais
+    observée en vrai) : saison{cle, nom, niveaux, ouverte, avenir, reste, dans, gratuits[]}, moi{niveau, xp, xpNiveau, xpSuivant, abonne, pris[],
+    actifMinutes}, niveaux[{niveau, genre, titre, texte, n, cle, xp, rarete, carte?, bonus?, insigne?}], regles{...}.
+    Le serveur décide de tout (barème, XP, ce qui est pris) ; ici on ne fait que décoder, sur liste blanche."""
+    d = d if isinstance(d, dict) else {}
+    s, m, r = (d.get(k) if isinstance(d.get(k), dict) else {} for k in ("saison", "moi", "regles"))
+    ints = lambda v: [i for i in (_to_int(x) for x in v if not isinstance(x, bool)) if i > 0] if isinstance(v, list) else []  # noqa: E731
+    levels = []
+    for x in d.get("niveaux") or []:
+        if not isinstance(x, dict) or _to_int(x.get("niveau")) < 1:
+            continue
+        card = expand_pack_card(x["carte"]) if isinstance(x.get("carte"), dict) and x["carte"].get("cid") else None
+        genre = x.get("genre") if x.get("genre") in SEASON_GENRES else "paquets"
+        levels.append({"level": _to_int(x["niveau"]), "kind": genre, "title": str(x.get("titre") or "")[:120], "text": str(x.get("texte") or "")[:400],
+                       "n": _to_int(x.get("n"), 1), "key": str(x.get("cle") or "")[:40], "xp": _to_int(x.get("xp")), "rarity": str(x.get("rarete") or "C")[:12],
+                       "card": card, "bonus": bool(x.get("bonus")), "badge": bool(x.get("insigne"))})
+    act = r.get("actif") if isinstance(r.get("actif"), dict) else {}
+    cards = r.get("cartes") if isinstance(r.get("cartes"), dict) else {}
+    return {
+        "season": {"key": str(s.get("cle") or "")[:20], "name": str(s.get("nom") or "")[:80], "levels": _to_int(s.get("niveaux"), 50), "open": bool(s.get("ouverte")),
+                   "future": bool(s.get("avenir")), "left": _to_int(s.get("reste")), "in": _to_int(s.get("dans")), "free": ints(s.get("gratuits"))},
+        "me": {"level": _to_int(m.get("niveau")), "xp": _to_int(m.get("xp")), "xp_level": _to_int(m.get("xpNiveau")), "xp_next": _to_int(m.get("xpSuivant")),
+               "subscriber": bool(m.get("abonne")), "taken": ints(m.get("pris")), "active_minutes": _to_int(m.get("actifMinutes"))},
+        "levels": levels,
+        "rules": {"pack": _to_int(r.get("paquet")), "gold_pack": _to_int(r.get("paquetOr")), "market_first": _to_int(r.get("marchePremieres")),
+                  "bid": _to_int(r.get("enchere")), "sale": _to_int(r.get("vente")), "bid_after": _to_int(r.get("enchereSuite")), "market_hour": _to_int(r.get("marcheHeure")),
+                  "wbc": _to_int(r.get("wbc")), "active_xp": _to_int(act.get("xp")), "active_every": _to_int(act.get("minutes")), "active_max": _to_int(act.get("maxMinutes")),
+                  "cards": {str(k): _to_int(v) for k, v in cards.items() if k in ("PC", "R", "SR", "UR", "L", "M")}, "shiny": _to_int(r.get("chromatique"))},
+    }
+
+
+def _population(p):
+    """Combien d'exemplaires de la carte existent dans le jeu (`population` de `/api/card`, lu dans cards.js) : exemplaires, joueurs, chromatiques."""
+    if not isinstance(p, dict):
+        return None
+    return {"copies": max(0, _to_int(p.get("exemplaires"))), "players": max(0, _to_int(p.get("joueurs"))), "shiny": max(0, _to_int(p.get("chromatiques")))}
+
+
 def parse_card_sheet(d):
     """Fiche d'une carte (`/api/card?cid=`) -> dict lisible. Forme lue dans cards.js (`sheetBody`, `provHTML`), jamais vue en vrai.
     Ne contient rien de la vue du marché `/api/pro/marche` : elle est réservée aux abonnés WIKI-PRO, on n'y touche pas."""
@@ -280,6 +322,7 @@ def parse_card_sheet(d):
         })
     return {
         "extract": str(c.get("e") or ""),
+        "population": _population(d.get("population")),
         "mine": mine,
         "wished": bool(d.get("wished")),
         "friends": _names(d.get("chezAmis")), "guild": _names(d.get("chezGuilde")), "friend_wishes": _names(d.get("souhaitAmis")),

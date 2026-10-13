@@ -27,6 +27,11 @@ window.__calls=[]; window.__logged=__LOGGED__; window.__cache=__CACHE__; window.
 window.__prefs=__PREFS__; window.__packs=[]; window.__watch=[]; window.__actions=[]; window.__bids={}; window.__recycled=[]; window.__bidDelay=0;
 window.__events=[]; window.__state='live'; window.__now=Math.floor(Date.now()/1000); window.__notifs=[];
 const D = __DATA__;
+window.__spTaken=[3]; window.__spSub=false;
+window.__season=()=>({ok:true,season:{key:'s1',name:'Saison 1',levels:50,open:true,future:false,left:90000,in:0,free:[3,5,8,12]},
+  me:{level:12,xp:1240,xp_level:1200,xp_next:1300,subscriber:window.__spSub,taken:window.__spTaken.slice(),active_minutes:0},
+  levels:Array.from({length:50},(_,i)=>{const n=i+1;return {level:n,kind:n===10?'legende':n%3?'wikiki':'paquets',title:(n===10?'Paquet légendaire':'Niveau '+n+' <b>x</b>'),text:'',n:2,key:'',xp:n*100,rarity:'R',card:null,bonus:false,badge:false};}),
+  rules:{pack:10,gold_pack:30,market_first:3,bid:5,sale:5,bid_after:1,market_hour:4,wbc:50,active_xp:2,active_every:5,active_max:60,cards:{PC:1,R:3},shiny:20}});
 window.__hidden=[]; window.__tags=D.tags.slice();
 const INFO = {odds:{M:0.1,L:0.5,UR:2,SR:8,R:30,PC:70,C:100}, bank:{C:1,PC:3,R:10,SR:40,UR:100,L:500,M:2000}, shinyOdds:0.2, perPack:5};
 const copy = (o) => JSON.parse(JSON.stringify(o));
@@ -73,7 +78,7 @@ window.pywebview={api:{
    {code:'c10',family:'Collection',title:'10 cartes <b>x</b>',what:'Posséder 10 cartes',done:10,goal:10,finished:true,claimed:false,gain:20},
    {code:'c100',family:'Collection',title:'100 cartes',what:'',done:50,goal:100,finished:false,claimed:false,gain:100},{code:'c1',family:'Collection',title:'Première',what:'',done:1,goal:1,finished:true,claimed:true,gain:5}]};},
  claim:async(kind,key)=>{window.__calls.push('claim:'+kind+':'+JSON.stringify(key===undefined?null:key));return {ok:true,titles:['Récompense <b>x</b>'],gain:20,packs:false,gift:false,day:3,text:'Un paquet doré',kind:'dore'};},
- load_card:async(cid)=>{window.__calls.push('load_card:'+cid);return {ok:true,extract:'Un long extrait <b>x</b> de l article. '+'Une phrase de plus. '.repeat(40),
+ load_card:async(cid)=>{window.__calls.push('load_card:'+cid);return {ok:true,population:{copies:1284,players:311,shiny:9},extract:'Un long extrait <b>x</b> de l article. '+'Une phrase de plus. '.repeat(40),
    mine:[{id:5001,for_sale:false,state:'free',shiny:false,via:'enchere',ts:1790000000,price:250,from:'bob<i>',lot:false},{id:5002,for_sale:false,state:'locked',shiny:false,via:'paquet',ts:1780000000,price:null,from:'',lot:false}],
    wished:true,friends:['ami1','ami2'],guild:['g1'],friend_wishes:['ami3'],auctions:[auc(31,{ends_at:window.__now+120})]};},
  export_collection:async()=>{window.__calls.push('export');return {ok:true,path:'C:/Users/x/Downloads/wikipick-collection.csv',count:300};},
@@ -110,6 +115,12 @@ window.pywebview={api:{
  open_packs:async(count,defi,rep)=>{window.__calls.push('open_packs:'+count+':'+defi);window.pywebview.api._w('Paquets '+count);const k=Math.min(count,2);
    const packs=Array.from({length:k},(_,j)=>[0,1,2,3,4].map(i=>Object.assign(cardOf('fr:Q'+j+i,'Paquet <b>x</b> '+j+i,i===3?'SR':'C'),{new:i===0})));
    return {ok:true,packs,wanted:k,stopped:null,error:null,me:Object.assign({},D.me,{packs:Math.max(0,(D.me.packs||3)-k)})};},
+ season_get:async()=>window.__season(),
+ season_take:async(lv)=>{window.__calls.push('season_take:'+lv);window.pywebview.api._w('Season Pass '+lv);window.__spTaken.push(lv);
+   const it=window.__season().levels.find(x=>x.level===lv);const cards=it.kind==='legende'?Array.from({length:20},(_,i)=>Object.assign(cardOf('fr:L'+i,'Légende <b>x</b> '+i,i===19?'L':'C'),{new:i%5===0})):[];
+   return {ok:true,title:it.title,kind:it.kind,cards,mythic:false,merge:null,badge:false,state:window.__season(),me:null};},
+ season_equip:async(k,key)=>{window.__calls.push('season_equip:'+k+':'+key);return {ok:true};},
+ news_get:async()=>({ok:true,site_url:'https://wiki-pick.com/nouveautes',versions:[{version:'0.4.0',date:'2026-10-13',title:'Test <b>x</b>',items:[{kind:'new',text:'Une chose'},{kind:'fix',text:'Une autre'}]},{version:'0.3.0',date:'2026-10-08',title:'Avant',items:[{kind:'better',text:'Mieux'}]}]}),
  corbeille_get:async()=>({ok:true,price:4,minutes:20,items:[{id:801,card:cardOf('fr:D1','Recyclée 1','C'),left:600},{id:802,card:cardOf('fr:D2','Recyclée 2','R'),left:60}]}),
  corbeille_restore:async(ids,all)=>{window.__calls.push('restore:'+JSON.stringify(ids)+':'+all);return {ok:true,restored:all?2:1,cost:all?8:4};},
  corbeille_empty:async()=>{window.__calls.push('empty');return {ok:true,erased:2};},
@@ -245,7 +256,7 @@ with sync_playwright() as p:
     assert "Aux enchères en ce moment (1)" in ex and re.search(r"\b[12]:\d\d\b", pg.locator("#sheet-extra .timer").inner_text())
     assert pg.locator("#sheet-extra .extract").evaluate("n => !n.classList.contains('open')") and pg.locator("#sheet-extra >> text=Lire la suite").count() == 1
     pg.click("#sheet-extra >> text=Lire la suite"); assert pg.locator("#sheet-extra >> text=Réduire").count() == 1
-    assert pg.locator("#sheet-extra b, #sheet-extra i").count() == 0, "aucun HTML venu du site dans la fiche"
+    assert pg.locator("#sheet-extra b:not(.popu b), #sheet-extra i").count() == 0, "aucun HTML venu du site dans la fiche"
     assert pg.locator("#sheet-extra button").count() >= 2 and pg.locator("#sheet-extra .actions").count() == 1
     assert calls(pg, "load_card:" + cid0) == 1
     assert "Lectures" in pg.inner_text("#modal-body") and pg.locator("#modal-body dt").count() >= 2
@@ -391,6 +402,29 @@ with sync_playwright() as p:
     assert any(c.startswith('tag_save:[null,"Mes <b>favoris</b>"') for c in pg.evaluate("window.__calls")) and pg.locator(".tagmgr-list li").count() >= 2
     assert pg.locator(".tagmgr b").count() == 0 and "Mes <b>favoris</b>" in pg.inner_text("#f-tag"), "le nom d'une étiquette reste du texte"
     pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+
+    # --- Season Pass, Nouveautés, niveau autour de la photo, exemplaires dans le jeu
+    assert pg.is_visible("#me-lvl") and "Niv. 12" in pg.inner_text("#me-lvl"), "le niveau s'affiche à côté du pseudo"
+    pg.click("[data-tab=season]"); pg.wait_for_selector("#sp-body .sp-stage"); pg.wait_for_timeout(300)
+    assert "12" in pg.inner_text(".sp-head") and pg.locator(".sp-cell").count() == 50
+    pg.evaluate("window.__calls = []")
+    go = pg.locator("[data-act=sp-take]"); assert go.count() == 1
+    go.click(); pg.wait_for_timeout(500)
+    got = [c for c in pg.evaluate("window.__calls") if c.startswith("season_take:")]
+    assert got == ["season_take:5"] and "à toi" in pg.inner_text("#toast"), (got, pg.inner_text("#toast"), pg.inner_text(".sp-stage"))
+    pg.locator(".sp-cell[data-l='13']").click(); pg.wait_for_timeout(200)
+    assert "WIKI-PRO" in pg.inner_text(".sp-stage") or "XP" in pg.inner_text(".sp-stage")
+    pg.locator(".sp-cell[data-l='7']").click(); pg.wait_for_timeout(200)
+    assert "WIKI-PRO" in pg.inner_text(".sp-stage") and pg.locator("[data-act=sp-take]").count() == 0, "réservée aux abonnés : aucun bouton pour la récupérer"
+    pg.evaluate("window.__spSub = true"); pg.click("[data-tab=news]"); pg.wait_for_selector(".ver"); pg.click("[data-tab=season]"); pg.wait_for_selector(".sp-stage"); pg.evaluate("SP.d = null"); pg.click("[data-tab=news]"); pg.click("[data-tab=season]"); pg.wait_for_timeout(500)
+    pg.locator(".sp-cell[data-l='10']").click(); pg.wait_for_timeout(200)
+    pg.locator("[data-act=sp-take]").click(); pg.wait_for_selector("#dialog-body .bgrid .card", timeout=5000)
+    assert pg.locator("#dialog-body .bgrid .card").count() == 20 and pg.locator("#dialog-body b").count() == 0, "20 cartes, noms en texte"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.click("[data-tab=news]"); pg.wait_for_selector(".ver"); assert "0.4.0" in pg.inner_text("#news-body") and "<b>x</b>" in pg.inner_text("#news-body") and pg.locator("#news-body b").count() == 2, "notes en texte"
+    pg.click("[data-tab=collection]"); pg.wait_for_timeout(200)
+    pg.locator("#grid .card").first.click(); pg.wait_for_selector("#modal:not(.hidden) .popu"); assert "1 284" in pg.inner_text(".popu").replace("\u202f", " ").replace("\u00a0", " ") and "311 joueurs" in pg.inner_text(".popu")
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
 
     # --- marché en direct (lecture seule)
     pg.click("[data-tab=market]"); pg.wait_for_timeout(500)

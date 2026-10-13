@@ -93,7 +93,7 @@
   .thread-pane { display: none; min-width: 0; }
   .msgs.in-thread .list-pane { display: none; } .msgs.in-thread .thread-pane { display: flex; flex-direction: column; }
   .search { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; color: var(--faint); background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 12px; }
-  .search:focus-within { color: var(--text); border-color: rgba(241, 232, 212, .5); }
+  .search:focus-within { color: var(--text); border-color: rgba(228, 197, 133, .5); }
   .search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: 16px var(--sans); }
   .list, .convs { display: grid; gap: 2px; }
   .conv { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 10px; text-align: left; cursor: pointer; background: none; border: 0; border-radius: 12px; color: inherit; }

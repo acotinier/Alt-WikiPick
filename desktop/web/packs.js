@@ -3,7 +3,7 @@
    Écriture : un clic = un paquet (api.open_pack), jamais en boucle.
    Chargé AVANT app.js : ne rien exécuter ici au chargement, S / $ / el… n'existent pas encore. */
 
-const PK = { cards: [], flipped: 0, opening: false, many: 3 };
+const PK = { cards: [], flipped: 0, opening: false, many: null }; // many : null = le maximum disponible
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -23,7 +23,7 @@ function renderPacks() {
 }
 
 /* ---------- plusieurs paquets d'affilée : le nombre est choisi par le joueur ; s'arrête si le site demande sa vérification ---------- */
-function manyCount() { return Math.max(2, Math.min(PK.many, (S.data && S.data.me.packs) || 0, 20)); }
+function manyCount() { const max = Math.min((S.data && S.data.me.packs) || 0, 20); return Math.max(2, Math.min(PK.many ?? max, max)); }
 async function openMany(proof) {
   const me = S.data && S.data.me, k = manyCount();
   if (PK.opening || !me || (me.packs ?? 0) < 2) return;
@@ -37,7 +37,7 @@ async function openMany(proof) {
     if (r.challenge && !proof) { me.defi = true; return openMany(); }
     return toast(r.error || "Ouverture impossible");
   }
-  S.data.me = r.me; S.dirty = true; renderHeader(); renderPacks();
+  PK.many = null; S.data.me = r.me; S.dirty = true; renderHeader(); renderPacks();
   showBatch(r);
   api().pack_seen();
 }

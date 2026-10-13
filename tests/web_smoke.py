@@ -164,7 +164,7 @@ with sync_playwright() as p:
 
     # ---- plusieurs paquets d'un coup : le nombre est choisi par le joueur, un résumé de toutes les cartes à la fin
     pg.evaluate("window.__mock.defi = false; window.__calls = []")
-    pg.wait_for_selector(".many"); k = int(pg.inner_text(".stepper b")); assert k >= 2 and f"{k} paquets d'un coup" in pg.inner_text(".many")
+    pg.wait_for_selector(".many"); k = int(pg.inner_text(".stepper b")); left = int("".join(ch for ch in pg.inner_text(".idle .count") if ch.isdigit())); assert k == min(left, 20), "le compteur démarre au maximum disponible"; assert k >= 2 and f"{k} paquets d'un coup" in pg.inner_text(".many")
     pg.click(".many .btn"); pg.wait_for_selector(".batch", timeout=6000)
     sent = calls(pg, "open_packs")[-1]
     assert sent[1] == k and len(sent) == 2, "le nombre choisi part tel quel, sans réponse à la vérification"
@@ -196,6 +196,38 @@ with sync_playwright() as p:
     assert "Arrêté." in pg.inner_text(".run") and calls(pg, "fusion_stop")
     pg.click(".run .btn.primary"); pg.wait_for_selector(".panel .sum")
     pg.evaluate("location.hash = '#/packs/open'")
+
+
+    # ---- paquet de 20 cartes : une grille lisible, sans débordement ; Season Pass : récupérer, réservé, paquet légendaire
+    pg.evaluate("window.__mock.gold = true; window.__mock.packs = 3"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(800)
+    pg.evaluate("location.hash = '#/packs'"); pg.wait_for_selector(".idle")
+    pg.click("text=Ton paquet doré offert"); pg.wait_for_selector(".reveal.many", timeout=6000); pg.wait_for_timeout(1000)
+    pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=20000); pg.wait_for_timeout(600)
+    assert pg.locator(".pcard").count() == 20 and pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "20 cartes, aucun débordement horizontal"
+    assert all(b and b["width"] > 85 for b in [e.bounding_box() for e in pg.locator(".pcard").all()]), "chaque carte reste assez grande pour être lue"
+    pg.click("text=Terminer"); pg.wait_for_selector(".idle")
+
+    pg.evaluate("location.hash = '#/me/season'"); pg.wait_for_selector(".stage"); pg.wait_for_timeout(300)
+    assert "12" in pg.inner_text(".head") and pg.locator(".cell").count() == 50, "niveau 12, cinquante niveaux"
+    assert "WIKI-PRO" in pg.inner_text(".note"), "sans abonnement : les récompenses gratuites sont annoncées"
+    pg.evaluate("window.__calls = []")
+    pg.locator(".stage .btn.primary").click(); pg.wait_for_timeout(500)
+    assert len(calls(pg, "season_take")) == 1 and calls(pg, "season_take")[-1][1] == 8 and "c'est à toi" in pg.inner_text(".toasts"), "un clic = une récompense"
+    pg.locator(".cell", has=pg.locator(".n", has_text="10")).first.click(); pg.wait_for_timeout(300)
+    assert "WIKI-PRO" in pg.inner_text(".stage") and pg.locator(".stage .btn.primary, .stage .btn.armed").count() == 0, "réservée aux abonnés : aucun bouton pour la récupérer"
+    pg.evaluate("window.__mock.season.sub = true"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(500)
+    pg.evaluate("location.hash = '#/me/profile'"); pg.wait_for_timeout(300); pg.evaluate("location.hash = '#/me/season'"); pg.wait_for_selector(".stage"); pg.wait_for_timeout(300)
+    pg.locator(".cell", has=pg.locator(".n", has_text="10")).first.click(); pg.wait_for_timeout(200)
+    assert "Récupérer et ouvrir" in pg.inner_text(".stage"), "un abonné peut récupérer"
+    pg.locator(".stage .btn.primary").click(); pg.wait_for_selector("[role=dialog] .grid .card", timeout=6000)
+    assert pg.locator("[role=dialog] .grid .card").count() == 20, "le paquet légendaire affiche ses 20 cartes"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    pg.click(".seg button >> text=Nouveautés"); pg.wait_for_selector(".ver")
+    assert "0.4.0" in pg.inner_text(".ver") and pg.locator("a.site[href^='https://wiki-pick.com']").count() == 1, "l'onglet Nouveautés : notes et lien vers le site"
+    pg.evaluate("location.hash = '#/collection'"); pg.wait_for_selector(".g .card")
+    pg.get_by_role("button", name="Tour Eiffel", exact=True).first.click(); pg.wait_for_selector("[role=dialog] .extract")
+    assert "1 284 exemplaires" in pg.inner_text("[role=dialog]").replace("\u202f", " ").replace("\u00a0", " ") and "chez 311 joueurs" in pg.inner_text("[role=dialog]"), "combien d'exemplaires existent dans le jeu"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
 
     # ---- marché : miser demande deux pressions
     pg.click(".tabbar button >> nth=2"); pg.wait_for_selector(".offer"); pg.wait_for_timeout(300)
