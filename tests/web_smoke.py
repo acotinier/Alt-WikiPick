@@ -42,7 +42,7 @@ with sync_playwright() as p:
 
     def page(w=390, h=844, logged=True):
         ctx = b.new_context(viewport={"width": w, "height": h}, device_scale_factor=2 if w < 600 else 1, is_mobile=w < 600, has_touch=w < 600)
-        ctx.add_init_script("localStorage.setItem('mock-logged','%s')" % ("1" if logged else "0"))
+        ctx.add_init_script("localStorage.setItem('mock-logged','%s'); window.__actEvery = 250" % ("1" if logged else "0"))
         pg = ctx.new_page()
         errs = []
         pg.on("pageerror", lambda e: errs.append("PAGEERROR " + str(e)))
@@ -206,6 +206,14 @@ with sync_playwright() as p:
     assert pg.locator(".pcard").count() == 20 and pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "20 cartes, aucun débordement horizontal"
     assert all(b and b["width"] > 85 for b in [e.bounding_box() for e in pg.locator(".pcard").all()]), "chaque carte reste assez grande pour être lue"
     pg.click("text=Terminer"); pg.wait_for_selector(".idle")
+
+    # ---- XP au temps passé : le signal ne part qu'après un vrai geste, une fois par tranche
+    pg.wait_for_timeout(5000); pg.evaluate("window.__calls = []"); pg.wait_for_timeout(900)
+    assert not calls(pg, "season_active"), "aucun geste : aucun signal"
+    pg.mouse.click(5, 300); pg.wait_for_timeout(1000)
+    assert len(calls(pg, "season_active")) == 1, "un geste : un signal"
+    pg.mouse.click(5, 300); pg.wait_for_timeout(1000)
+    assert len(calls(pg, "season_active")) == 1, "même avec un nouveau geste, pas de deuxième signal avant la fin de la tranche"
 
     pg.evaluate("location.hash = '#/me/season'"); pg.wait_for_selector(".stage"); pg.wait_for_timeout(300)
     assert "12" in pg.inner_text(".head") and pg.locator(".cell").count() == 50, "niveau 12, cinquante niveaux"

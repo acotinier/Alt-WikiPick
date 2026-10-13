@@ -112,6 +112,8 @@ class Service:
         self._dir.mkdir(parents=True, exist_ok=True)
         self._pack_lock = threading.Lock()  # une seule ouverture à la fois
         self._write_lock = threading.Lock()  # une seule écriture à la fois : jamais deux clics simultanés
+        self._act_after = 0.0  # signal d'activité du Season Pass : pas de nouvel envoi avant cet instant (time.monotonic)
+        self._act_lock = threading.Lock()
         self._fusion = None  # le lot de fusions en cours (ou le dernier), voir fusion_start()
         self._fusion_halt = threading.Event()
         self._actions = JsonStore(self._dir / "actions.json", [])  # journal local de ce que tu as fait depuis l'appli
@@ -709,6 +711,39 @@ class Service:
                     "merge": {"from": str(fu.get("de") or "")[:120], "to": str(fu.get("vers") or "")[:120]} if fu else None, "badge": bool(r.get("insigne")),
                     "state": parse_season(r.get("etat")), "me": safe_me(r["me"], None) if isinstance(r.get("me"), dict) else None}
         return self._write(f"Season Pass : récompense du niveau {str(level)[:4]}", run)
+
+    def season_active(self):
+        """L'XP au temps passé, comme le site : l'INTERFACE n'appelle ceci que si le joueur a touché l'écran (clic, touche, molette, doigt) depuis le
+        dernier envoi, onglet visible. Ici : jamais plus d'un envoi par tranche (celle que donne le serveur, 5 minutes par défaut), jamais en parallèle,
+        et un envoi qui échoue ne se rejoue pas avant une minute. Le serveur du jeu décide de tout (activité réelle, plafond du jour)."""
+        if not self._act_lock.acquire(blocking=False):
+            return {"ok": True, "sent": False, "wait": 5}
+        try:
+            now = time.monotonic()
+            if now < self._act_after:
+                return {"ok": True, "sent": False, "wait": int(self._act_after - now) + 1}
+            self._act_after = now + 60  # si l'appel échoue, pas avant une minute
+
+            def run():
+                r = self._client.season_active() or {}
+                reason = str(r.get("raison") or "")[:12]
+                if not r.get("ouverte"):  # pas de saison en cours : on y revient à son début, une heure au plus tard
+                    wait = min(3600, max(60, _to_int(r.get("dans"), 3600)))
+                else:
+                    wait = max(60, min(3600, _to_int(r.get("tranche"), 300)))
+                    if reason == "plafond":
+                        wait = 3600
+                    elif reason == "attente":
+                        wait = max(10, min(600, _to_int(r.get("attendre"), 60)))
+                    elif reason == "inactif":
+                        wait = 60
+                self._act_after = time.monotonic() + wait
+                return {"ok": True, "sent": True, "open": bool(r.get("ouverte")), "reason": reason, "wait": wait, "level": _to_int(r.get("niveau")), "xp": _to_int(r.get("xp")),
+                        "xp_level": _to_int(r.get("xpNiveau")), "xp_next": _to_int(r.get("xpSuivant")), "subscriber": bool(r.get("abonne")),
+                        "active_minutes": _to_int(r.get("actifMinutes")), "to_take": max(0, _to_int(r.get("aPrendre")))}
+            return self._guard(run)
+        finally:
+            self._act_lock.release()
 
     def season_equip(self, kind, key):
         """Met un dos de carte ou un cadre de photo gagné dans le Season Pass (« s1-lagon »)."""

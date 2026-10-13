@@ -1,7 +1,8 @@
 "use strict";
 /* Season Pass : cinquante niveaux, une récompense par niveau (forme lue dans saison.js du site). La récompense choisie s'affiche en grand,
    les niveaux défilent dessous. Récupérer = un clic, un niveau. Une récompense réservée aux abonnés WIKI-PRO ne se récupère pas sans l'être
-   (le serveur le refuse aussi). Le signal d'activité du site, qui rapporte de l'XP au temps passé, n'est volontairement PAS envoyé.
+   (le serveur le refuse aussi). L'XP au temps passé : comme le site, un signal n'est envoyé que si le joueur a réellement touché l'écran depuis le
+   précédent, fenêtre visible, au plus une fois par tranche (5 minutes par défaut) ; le serveur du jeu décide.
    Chargé AVANT app.js : rien ne s'exécute ici au chargement. */
 
 const SP = { d: null, sel: null, loading: false, rules: false };
@@ -23,6 +24,28 @@ function spProgress(d) {
 }
 
 /* l'anneau de niveau autour de la photo, dans l'en-tête */
+const SPA = { touched: false, after: 0, busy: false, last: null };
+async function spSignal() {
+  const now = Date.now();
+  if (SPA.busy || !SPA.touched || document.visibilityState !== "visible" || now < SPA.after || !S.data) return;
+  SPA.busy = true; SPA.touched = false; SPA.after = now + 60000;
+  try {
+    const r = await api().season_active();
+    if (r.expired) return sessionLost(r);
+    if (!r.ok) return;
+    if (!r.sent) { SPA.after = now + (r.wait || 60) * 1000; SPA.touched = true; return; }
+    SPA.after = now + r.wait * 1000;
+    if (!r.open) { SPA.touched = true; return; }
+    if (SPA.last != null && r.level > SPA.last) toast(`Season Pass : niveau ${r.level} atteint${r.to_take > 0 ? " — une récompense t'attend." : "."}`, "good");
+    SPA.last = r.level;
+    if (S.data.me) S.data.me.niveau = r.level;
+    if (SP.d) Object.assign(SP.d.me, { level: r.level, xp: r.xp, xp_level: r.xp_level, xp_next: r.xp_next, subscriber: r.subscriber, active_minutes: r.active_minutes });
+    spHeader(); if (S.tab === "season" && SP.d) paintSeason();
+  } finally { SPA.busy = false; }
+}
+for (const t of ["pointerdown", "keydown", "wheel", "touchstart"]) addEventListener(t, () => { SPA.touched = true; }, { capture: true, passive: true });
+setInterval(spSignal, window.__actEvery || 20000); // (les tests raccourcissent l'attente)
+
 function spHeader() {
   const d = SP.d, lvl = (d && d.me.level) || (S.data && S.data.me && S.data.me.niveau) || 0;
   const chip = $("me-lvl"), ring = $("me-ring");
@@ -63,10 +86,10 @@ function spRules() {
     row("Ouvrir un paquet", `+${r.pack}`), row("Ouvrir un paquet doré", `+${r.gold_pack}`),
     row(`Tes ${r.market_first} premiers achats aux enchères du jour`, `+${r.bid}`), row(`Tes ${r.market_first} premières ventes du jour`, `+${r.sale}`),
     row("Achats et ventes suivants", `+${r.bid_after}`), row("Réussir un défi WBC", `+${r.wbc}`),
-    r.active_xp ? row("Rester actif sur wiki-pick.com", `+${r.active_xp} / ${r.active_every} min`) : null,
+    r.active_xp ? row(`Rester actif (un vrai geste toutes les ${r.active_every} min)`, `+${r.active_xp}`) : null,
     el("li", { class: "sub", text: "Chaque carte trouvée dans un paquet" }),
     Object.entries(r.cards).map(([k, v]) => row(label(k), `+${v}`, color(k))), r.shiny ? row("Chromatique", `+${r.shiny}`) : null),
-    el("p", { class: "muted small", text: "Le temps passé sur le site rapporte aussi de l'XP, mais seulement sur wiki-pick.com : Alt-WikiPick n'envoie pas ce signal d'activité à ta place." })));
+    el("p", { class: "muted small", text: `${d.me.active_minutes ? `Aujourd'hui : ${d.me.active_minutes} min comptées sur ${r.active_max}. ` : ""}Le temps passé rapporte de l'XP seulement si tu joues vraiment : le signal part quand tu touches l'écran, au plus toutes les ${r.active_every} minutes, et le jeu décide.` })));
 }
 
 async function loadSeason() {

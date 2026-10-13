@@ -10,6 +10,7 @@ CHANGELOG = [
     {"version": "0.4.0", "date": "2026-10-13", "title": "Season Pass, niveaux et nouveau design", "items": [
         ("new", "Season Pass : les cinquante niveaux, la récompense choisie en grand, récupérer une récompense, mettre un dos ou un cadre gagné."),
         ("new", "Ton niveau s'affiche autour de ta photo, avec l'anneau de progression."),
+        ("new", "XP au temps passé, comme sur le site : le signal ne part que si tu joues vraiment (un geste, au plus toutes les 5 minutes)."),
         ("new", "Sur la fiche d'une carte : combien d'exemplaires existent déjà dans le jeu, chez combien de joueurs."),
         ("new", "Un onglet Nouveautés pour relire les mises à jour d'Alt-WikiPick."),
         ("new", "Nouvelle identité visuelle : cabinet de curiosités, laiton et velours, cartes montées sous passe-partout."),

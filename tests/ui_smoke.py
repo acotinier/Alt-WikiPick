@@ -27,7 +27,7 @@ window.__calls=[]; window.__logged=__LOGGED__; window.__cache=__CACHE__; window.
 window.__prefs=__PREFS__; window.__packs=[]; window.__watch=[]; window.__actions=[]; window.__bids={}; window.__recycled=[]; window.__bidDelay=0;
 window.__events=[]; window.__state='live'; window.__now=Math.floor(Date.now()/1000); window.__notifs=[];
 const D = __DATA__;
-window.__spTaken=[3]; window.__spSub=false;
+window.__spTaken=[3]; window.__spSub=false; window.__actEvery=250;
 window.__season=()=>({ok:true,season:{key:'s1',name:'Saison 1',levels:50,open:true,future:false,left:90000,in:0,free:[3,5,8,12]},
   me:{level:12,xp:1240,xp_level:1200,xp_next:1300,subscriber:window.__spSub,taken:window.__spTaken.slice(),active_minutes:0},
   levels:Array.from({length:50},(_,i)=>{const n=i+1;return {level:n,kind:n===10?'legende':n%3?'wikiki':'paquets',title:(n===10?'Paquet légendaire':'Niveau '+n+' <b>x</b>'),text:'',n:2,key:'',xp:n*100,rarity:'R',card:null,bonus:false,badge:false};}),
@@ -119,6 +119,7 @@ window.pywebview={api:{
  season_take:async(lv)=>{window.__calls.push('season_take:'+lv);window.pywebview.api._w('Season Pass '+lv);window.__spTaken.push(lv);
    const it=window.__season().levels.find(x=>x.level===lv);const cards=it.kind==='legende'?Array.from({length:20},(_,i)=>Object.assign(cardOf('fr:L'+i,'Légende <b>x</b> '+i,i===19?'L':'C'),{new:i%5===0})):[];
    return {ok:true,title:it.title,kind:it.kind,cards,mythic:false,merge:null,badge:false,state:window.__season(),me:null};},
+ season_active:async()=>{window.__calls.push('season_active');return {ok:true,sent:true,open:true,reason:'',wait:2,level:12,xp:1250,xp_level:1200,xp_next:1300,subscriber:window.__spSub,active_minutes:5,to_take:1};},
  season_equip:async(k,key)=>{window.__calls.push('season_equip:'+k+':'+key);return {ok:true};},
  news_get:async()=>({ok:true,site_url:'https://wiki-pick.com/nouveautes',versions:[{version:'0.4.0',date:'2026-10-13',title:'Test <b>x</b>',items:[{kind:'new',text:'Une chose'},{kind:'fix',text:'Une autre'}]},{version:'0.3.0',date:'2026-10-08',title:'Avant',items:[{kind:'better',text:'Mieux'}]}]}),
  corbeille_get:async()=>({ok:true,price:4,minutes:20,items:[{id:801,card:cardOf('fr:D1','Recyclée 1','C'),left:600},{id:802,card:cardOf('fr:D2','Recyclée 2','R'),left:60}]}),
@@ -405,6 +406,12 @@ with sync_playwright() as p:
 
     # --- Season Pass, Nouveautés, niveau autour de la photo, exemplaires dans le jeu
     assert pg.is_visible("#me-lvl") and "Niv. 12" in pg.inner_text("#me-lvl"), "le niveau s'affiche à côté du pseudo"
+    pg.wait_for_timeout(5000); pg.evaluate("window.__calls = []"); pg.wait_for_timeout(700)
+    assert not [c for c in pg.evaluate("window.__calls") if c == "season_active"], "aucun geste : aucun signal d'activité"
+    pg.mouse.click(700, 500); pg.wait_for_timeout(900)
+    assert [c for c in pg.evaluate("window.__calls") if c == "season_active"] == ["season_active"], "un geste : un signal"
+    pg.mouse.click(700, 500); pg.wait_for_timeout(900)
+    assert [c for c in pg.evaluate("window.__calls") if c == "season_active"] == ["season_active"], "pas de deuxième signal dans la tranche"
     pg.click("[data-tab=season]"); pg.wait_for_selector("#sp-body .sp-stage"); pg.wait_for_timeout(300)
     assert "12" in pg.inner_text(".sp-head") and pg.locator(".sp-cell").count() == 50
     pg.evaluate("window.__calls = []")

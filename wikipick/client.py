@@ -203,9 +203,13 @@ class WikiPickClient:
         """UNE fusion (2 ou 3 cartes du même rang). Elle peut rater : les cartes sont alors perdues. Jamais rejouée."""
         return self._post_json("/api/fusion", {"ids": ids, "page": page})
 
-    # ---- Season Pass (lu dans saison.js ; `/api/saison/actif`, le signal d'activité qui rapporte de l'XP, n'est volontairement PAS appelé) ----
+    # ---- Season Pass (lu dans saison.js) ----
     def season(self):
         return self._get_json("/api/saison?p=3")
+
+    def season_active(self):
+        """Le signal d'activité du site (XP au temps passé). Réservé aux gestes réels du joueur : voir Service.season_active."""
+        return self._post_json("/api/saison/actif", {})
 
     def season_take(self, level):
         return self._post_json("/api/saison/prendre", {"niveau": level})

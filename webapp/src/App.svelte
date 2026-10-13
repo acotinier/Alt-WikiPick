@@ -6,7 +6,7 @@
   import { tick } from './lib/ticker.svelte.js';
 
   import { fz } from './lib/fusion.svelte.js';
-  import { levelProgress, loadSeason, season } from './lib/season.svelte.js';
+  import { levelProgress, loadSeason, season, watchActivity } from './lib/season.svelte.js';
   import Haul from './parts/Haul.svelte';
   import { clock, compact, fmt } from './lib/format.js';
   import { rewardsReady } from './lib/rewards.js';
@@ -72,7 +72,7 @@
     if (app.phase === 'app' && left === 0 && !full && Date.now() - Math.max(app.meAt, lastPoll) > 5000) { lastPoll = Date.now(); refreshMe(); }
   });
 
-  $effect(() => { if (app.phase === 'app') loadSeason(); });
+  $effect(() => { if (app.phase === 'app') { loadSeason(); watchActivity(); } });
   const RING = 2 * Math.PI * 21;
   const prog = $derived(levelProgress(season.d));
   const lvl = $derived((season.d && season.d.me.level) || (app.me && app.me.niveau) || 0);

@@ -99,7 +99,7 @@ Au premier lancement, Windows SmartScreen peut afficher « Windows a protégé v
 | **Arène** | Combats à deux en direct, decks, Mini-Pack. |
 | **Communauté** | Messagerie, amis (favoris, blocage), profils avec collection et vitrines, guilde (fil, tchat, membres, demandes). |
 | **Récompenses** | Série de connexion sur 7 jours, quêtes du jour, quêtes de bienvenue, succès. |
-| **Season Pass** | 50 niveaux, une récompense par niveau (paquets, Wikiki, dos, cadres, cartes exclusives, paquets légendaires…). Récupérer, mettre un dos ou un cadre gagné. Les récompenses réservées aux abonnés WIKI-PRO le restent : Alt-WikiPick ne les récupère pas à ta place. Le signal d'activité du site (XP au temps passé) n'est pas envoyé. |
+| **Season Pass** | 50 niveaux, une récompense par niveau (paquets, Wikiki, dos, cadres, cartes exclusives, paquets légendaires…). Récupérer, mettre un dos ou un cadre gagné. Les récompenses réservées aux abonnés WIKI-PRO le restent : Alt-WikiPick ne les récupère pas à ta place. L'**XP au temps passé** fonctionne comme sur le site : le signal d'activité ne part que si tu as réellement touché l'écran, appli visible, au plus toutes les 5 minutes ; le jeu décide. |
 | **Nouveautés** | Les notes de version d'Alt-WikiPick ; un lien vers celles du jeu. |
 | **Et aussi** | Classement, statistiques, doublons recyclables et corbeille, recherche rapide `Ctrl+K`, raccourcis `1`–`9`, sons optionnels, export CSV. |
 

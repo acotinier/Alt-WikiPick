@@ -114,12 +114,51 @@ def test_equip_validates_the_reward_name(tmp_path):
     assert len(fake.calls) == 2
 
 
-def test_the_activity_signal_is_never_sent():
-    from wikipick import client
-    assert not hasattr(client.WikiPickClient, "season_active"), "le signal d'activité du site (qui rapporte de l'XP) n'est pas reproduit"
+def test_exposed_methods():
     from server.rpc import ALLOWED
-    assert {"season_get", "season_take", "season_equip", "news_get"} <= ALLOWED
-    assert "saison/actif" not in Path(client.__file__).read_text(encoding="utf-8").replace("`/api/saison/actif`", "")
+    assert {"season_get", "season_take", "season_equip", "season_active", "news_get"} <= ALLOWED
+
+
+def active_reply(**kw):
+    return {"ouverte": True, "tranche": 300, "niveau": 12, "xp": 1250, "xpNiveau": 1200, "xpSuivant": 1300, "abonne": False, "actifMinutes": 5, "aPrendre": 2, **kw}
+
+
+def test_activity_signal_is_throttled_by_the_server_window(tmp_path):
+    fake = Fake()
+    fake.hits = 0
+    fake.season_active = lambda: (setattr(fake, "hits", fake.hits + 1), active_reply())[1]
+    s = service(tmp_path, fake)
+    r = s.season_active()
+    assert r["ok"] and r["sent"] and r["level"] == 12 and r["xp"] == 1250 and r["to_take"] == 2 and r["wait"] == 300 and r["active_minutes"] == 5
+    for _ in range(5):  # même en insistant (interface modifiée, deux onglets) : pas de nouvel envoi dans la tranche
+        again = s.season_active()
+        assert again["ok"] and again["sent"] is False and again["wait"] > 250
+    assert fake.hits == 1
+
+
+@pytest.mark.parametrize("reply,wait", [({"raison": "plafond"}, 3600), ({"raison": "attente", "attendre": 90}, 90), ({"raison": "inactif"}, 60),
+                                        ({"ouverte": False, "dans": 120}, 120), ({"ouverte": False, "dans": 10**7}, 3600), ({"tranche": 5}, 60), ({"tranche": "x"}, 300)])
+def test_activity_signal_waits_as_the_server_says(tmp_path, reply, wait):
+    fake = Fake()
+    fake.season_active = lambda: active_reply(**reply)
+    r = service(tmp_path, fake).season_active()
+    assert r["ok"] and r["sent"] and r["wait"] == wait
+
+
+def test_activity_signal_failure_is_not_retried_for_a_minute_and_expiry_is_reported(tmp_path):
+    from wikipick.client import ApiError, SessionExpired
+    fake = Fake()
+    calls = []
+
+    def boom():
+        calls.append(1)
+        raise ApiError("Réseau indisponible : ConnectionError")
+    fake.season_active = boom
+    s = service(tmp_path, fake)
+    assert s.season_active()["ok"] is False and s.season_active()["sent"] is False and len(calls) == 1
+    gone = Fake()
+    gone.season_active = lambda: (_ for _ in ()).throw(SessionExpired("Session expirée"))
+    assert service(tmp_path / "b", gone).season_active().get("expired") is True
 
 
 def test_news_lists_versions_newest_first():

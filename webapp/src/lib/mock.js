@@ -211,6 +211,7 @@ const H = {
     const cards = it.kind === 'legende' || it.kind === 'mythique' ? Array.from({ length: 20 }, (_, i) => card(i + 3, i === 19 ? (it.kind === 'mythique' ? 'M' : 'L') : ['C', 'C', 'PC', 'R'][i % 4], { new: i % 5 === 0, ids: [i + 1] })) : [];
     return { ok: true, title: it.title, kind: it.kind, cards, mythic: it.kind === 'mythique', merge: null, badge: false, state: seasonState(), me: me() };
   },
+  season_active: () => ({ ok: true, sent: true, open: true, reason: '', wait: 2, level: S.season.level, xp: S.season.level * 100 + 45, xp_level: S.season.level * 100, xp_next: (S.season.level + 1) * 100, subscriber: S.season.sub, active_minutes: 5, to_take: 1 }),
   season_equip: (kind, key) => ({ ok: true, kind, key }),
   news_get: () => ({ ok: true, site_url: 'https://wiki-pick.com/nouveautes', versions: [
     { version: '0.4.0', date: '2026-10-13', title: 'Season Pass, niveaux et nouveau design', items: [{ kind: 'new', text: 'Season Pass : cinquante niveaux, une récompense par niveau.' }, { kind: 'fix', text: 'Les paquets de 20 cartes s’affichent en grille lisible.' }] },

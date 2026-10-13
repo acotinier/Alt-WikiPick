@@ -120,12 +120,12 @@
       <li><span>Tes {d.rules.market_first} premières ventes du jour</span><b class="num">+{d.rules.sale}</b></li>
       <li><span>Achats et ventes suivants</span><b class="num">+{d.rules.bid_after}</b></li>
       <li><span>Réussir un défi WBC</span><b class="num">+{d.rules.wbc}</b></li>
-      {#if d.rules.active_xp}<li><span>Rester actif sur wiki-pick.com</span><b class="num">+{d.rules.active_xp} / {d.rules.active_every} min</b></li>{/if}
+      {#if d.rules.active_xp}<li><span>Rester actif (un vrai geste toutes les {d.rules.active_every} min)</span><b class="num">+{d.rules.active_xp} / {d.rules.active_every} min</b></li>{/if}
       <li class="sub">Chaque carte trouvée dans un paquet</li>
       {#each Object.entries(d.rules.cards) as [r, xp]}<li><span style:color={color(r)}>{app.names[r] || r}</span><b class="num">+{xp}</b></li>{/each}
       {#if d.rules.shiny}<li><span>Chromatique</span><b class="num">+{d.rules.shiny}</b></li>{/if}
     </ul>
-    <p class="muted fine">Le temps passé sur le site rapporte aussi de l'XP, mais seulement sur wiki-pick.com : Alt-WikiPick n'envoie pas ce signal d'activité à ta place.</p>
+    <p class="muted fine">{d.me.active_minutes ? `Aujourd'hui : ${d.me.active_minutes} min comptées sur ${d.rules.active_max}. ` : ''}Le temps passé rapporte de l'XP seulement si tu joues vraiment : le signal part quand tu touches l'écran, au plus toutes les {d.rules.active_every} minutes, et le jeu décide.</p>
   </Sheet>
 {/if}
 
