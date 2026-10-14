@@ -163,5 +163,5 @@ def test_activity_signal_failure_is_not_retried_for_a_minute_and_expiry_is_repor
 
 def test_news_lists_versions_newest_first():
     n = news()
-    assert n["site_url"].startswith("https://wiki-pick.com/") and n["versions"][0]["version"] == "0.5.0"
+    assert n["site_url"].startswith("https://wiki-pick.com/") and n["versions"][0]["version"] == "0.5.1"
     assert all(i["kind"] in ("new", "better", "fix") for v in n["versions"] for i in v["items"])

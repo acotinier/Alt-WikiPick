@@ -89,7 +89,18 @@
     const best = todo.reduce((b, i) => (b < 0 || rarityRank(cards[i].rarity) < rarityRank(cards[b].rarity) ? i : b), -1);
     for (const i of todo) { flipped = [...flipped, i]; if (i === best) celebrate(cards[i]); await sleep(reduced ? 0 : 220); }
   }
-  const done = (again) => { phase = 'idle'; scrollTo({ top: 0 }); collectionChanged(); refreshMe(); if (again) open(); };
+  // ---- démonstration : un tirage FICTIF (aucun appel au jeu, rien ne change dans ta collection) pour voir l'animation de chaque rareté ----
+  const DEMO = [["Lune", "satellite naturel de la Terre", "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/330px-FullMoon2010.jpg"], ["Mont Blanc", "plus haut sommet des Alpes", "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Mont_Blanc_oct_2005.jpg/330px-Mont_Blanc_oct_2005.jpg"], ["Lion", "espèce de mammifères carnivores", "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Lion_waiting_in_Namibia.jpg/330px-Lion_waiting_in_Namibia.jpg"], ["La Grande Vague de Kanagawa", "estampe de Hokusai, 1830", "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Tsunami_by_hokusai_19th_century.jpg/330px-Tsunami_by_hokusai_19th_century.jpg"], ["Tour Eiffel", "tour de fer puddlé de 330 mètres à Paris", "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/330px-Tour_Eiffel_Wikimedia_Commons.jpg"]];
+  const DEMO_RARITIES = ['C', 'PC', 'R', 'SR', 'UR', 'L', 'M'];
+  let demo = $state(false), demoPick = $state(false);
+  function startDemo(r) {
+    const lower = ['C', 'C', 'PC', 'R', 'SR'].filter((x) => rarityRank(x) > rarityRank(r)).slice(0, 4);
+    while (lower.length < 4) lower.unshift('C');
+    const order = [...lower, r];
+    cards = order.map((rar, i) => ({ cid: 'demo:' + i, name: DEMO[i][0], desc: DEMO[i][1], img: DEMO[i][2], rarity: rar, reads: 9000 + i * 4300000, shiny: false, copies: 1, locked: false, tags: [], ids: [], new: i % 2 === 1 }));
+    flipped = []; demo = true; demoPick = false; phase = 'reveal'; scrollTo({ top: 0 });
+  }
+  const done = (again) => { if (demo) { demo = false; phase = 'idle'; cards = []; scrollTo({ top: 0 }); return; } phase = 'idle'; scrollTo({ top: 0 }); collectionChanged(); refreshMe(); if (again) open(); };
   const finished = $derived(phase === 'reveal' && flipped.length >= cards.length);
   const best = $derived(cards[cards.length - 1]);
 
@@ -126,6 +137,7 @@
     <p class="next muted num">{left == null ? '' : full ? 'Réserve pleine' : `Prochain paquet dans ${clock(left)}`}</p>
     <div class="actions">
       <button class="btn primary big" disabled={opening || n < 1} onclick={() => open()}>{opening ? 'Ouverture…' : 'Ouvrir un paquet'}</button>
+      <button class="btn small ghost demo" onclick={() => (demoPick = true)}>Voir les animations</button>
       {#if n >= 2}
         <div class="many">
           <div class="mhead"><span>Plusieurs d'un coup</span><div class="stepper"><button aria-label="Moins" disabled={k <= 2} onclick={() => (many = k - 1)}>−</button><b class="num">{k}</b><button aria-label="Plus" disabled={k >= maxK} onclick={() => (many = k + 1)}>+</button></div></div>
@@ -165,12 +177,22 @@
       <div class="pbar"><div class="trk"><i style:width="{(flipped.length / cards.length) * 100}%"></i></div><span class="muted num">{flipped.length} sur {cards.length}</span><button class="btn small" onclick={flipAll}>Tout retourner</button></div>
     {:else}
       <div class="end">
+        {#if demo}
+          <p class="serif">Démonstration : {app.names[best.rarity] || best.rarity}. Ce paquet est fictif, ta collection n'a pas bougé.</p>
+          <div class="row center"><button class="btn" onclick={() => done(false)}>Terminer</button><button class="btn primary" onclick={() => startDemo(best.rarity)}>Rejouer</button></div>
+        {:else}
         <p class="serif">Paquet ouvert : {plural(cards.length, 'carte')}, dont {plural(cards.filter((c) => c.new).length, 'nouvelle')}. La plus rare : {best.name} ({app.names[best.rarity] || best.rarity}).</p>
         <div class="row center"><button class="btn" onclick={() => done(false)}>Terminer</button><button class="btn primary" disabled={n < 1} onclick={() => done(true)}>Ouvrir un autre paquet</button></div>
+        {/if}
       </div>
     {/if}
   </section>
 {/if}
+
+<Sheet open={demoPick} onclose={() => (demoPick = false)} title="Voir les animations">
+  <p class="muted">Un tirage fictif : la carte de la rareté choisie arrive en dernier. Ça ne consomme aucun paquet et ne touche pas à ta collection.</p>
+  <div class="dpick">{#each DEMO_RARITIES as r}<button class="dchip" style:--c={color(r)} onclick={() => startDemo(r)}>{app.names[r] || r}</button>{/each}</div>
+</Sheet>
 
 {#if fx}{#key fx.n}<RarityFx r={fx.r} title={fx.title} />{/key}{/if}
 
@@ -246,6 +268,11 @@
   .trk { flex: 1; height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; } .trk i { display: block; height: 100%; background: var(--ivory); transition: width .4s var(--ease); }
   .end { display: grid; gap: 18px; text-align: center; animation: rise .5s var(--ease); } .end { gap: 12px; } .end p { font-size: 16px; line-height: 1.3; max-width: 40ch; }
 
+  .demo { justify-self: center; margin-top: 4px; }
+  .dpick { display: grid; gap: 10px; margin-top: 14px; }
+  .dchip { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; color: var(--text); font: 600 16px var(--serif); text-align: left; cursor: pointer;
+    background: color-mix(in srgb, var(--c) 14%, var(--ink-2)); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); border-radius: 13px; }
+  .dchip::before { content: ""; width: 10px; height: 10px; transform: rotate(45deg); border-radius: 2px; background: var(--c); box-shadow: 0 0 10px var(--c); }
   .many { display: grid; gap: 12px; width: 100%; padding: 14px; background: var(--ink-1); border: 1px solid var(--line); border-radius: 16px; }
   .mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
   .range { width: 100%; height: 28px; accent-color: var(--ivory); }

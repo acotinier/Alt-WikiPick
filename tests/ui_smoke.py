@@ -472,6 +472,19 @@ with sync_playwright() as p:
     pg.wait_for_timeout(1800)
     pg.click("#btn-done"); pg.wait_for_timeout(300)
 
+    # --- démonstration des animations : un tirage fictif pour chaque rareté, sans toucher au jeu
+    pg.click("[data-tab=packs]"); pg.wait_for_timeout(300); pg.evaluate("window.__calls = []")
+    for r, rays in (("Épique", 0), ("Légendaire", 1), ("Mythique", 1)):
+        pg.click("#btn-demo"); pg.wait_for_selector("#dialog-body .dchip")
+        pg.locator("#dialog-body .dchip", has_text=r).click(); pg.wait_for_selector("#reveal:not(.hidden)", timeout=5000); pg.wait_for_timeout(900)
+        pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
+        assert pg.locator(".fx").count() == 1 and pg.locator(".fx .fx-rays").count() == rays, r
+        pg.wait_for_timeout(3600)
+        pg.click("#btn-flip-all"); pg.wait_for_selector("#pk-end:not(.hidden)", timeout=8000)
+        assert "Démonstration" in pg.inner_text("#pk-summary") and pg.inner_text("#btn-again") == "Rejouer"
+        pg.click("#btn-done"); pg.wait_for_timeout(300)
+    assert not [c for c in pg.evaluate("window.__calls") if c.split(":")[0] in ("open_pack", "open_gold_pack", "open_packs", "pack_seen")], "la démonstration n'appelle jamais le jeu"
+
     # --- marché en direct (lecture seule)
     pg.click("[data-tab=market]"); pg.wait_for_timeout(500)
     assert "watch:true" in pg.evaluate("window.__calls") and "load_market:live:0:::fin:" in pg.evaluate("window.__calls")

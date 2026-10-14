@@ -3,9 +3,23 @@
    Écriture : un clic = un paquet (api.open_pack), jamais en boucle.
    Chargé AVANT app.js : ne rien exécuter ici au chargement, S / $ / el… n'existent pas encore. */
 
-const PK = { cards: [], flipped: 0, opening: false, many: null }; // many : null = le maximum disponible
+const PK = { cards: [], flipped: 0, opening: false, many: null, demo: false }; // many : null = le maximum disponible
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- démonstration : un tirage FICTIF (aucun appel au jeu, rien ne change dans ta collection) pour voir l'animation de chaque rareté ---------- */
+const DEMO_ART = [["Lune", "satellite naturel de la Terre", "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/330px-FullMoon2010.jpg"], ["Mont Blanc", "plus haut sommet des Alpes", "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Mont_Blanc_oct_2005.jpg/330px-Mont_Blanc_oct_2005.jpg"], ["Lion", "espèce de mammifères carnivores", "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Lion_waiting_in_Namibia.jpg/330px-Lion_waiting_in_Namibia.jpg"], ["La Grande Vague de Kanagawa", "estampe de Hokusai, 1830", "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Tsunami_by_hokusai_19th_century.jpg/330px-Tsunami_by_hokusai_19th_century.jpg"], ["Tour Eiffel", "tour de fer puddlé de 330 mètres à Paris", "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/330px-Tour_Eiffel_Wikimedia_Commons.jpg"]];
+function startDemo(r) {
+  const lower = ["C", "C", "PC", "R", "SR"].filter((x) => rarityRank(x) > rarityRank(r)).slice(0, 4);
+  while (lower.length < 4) lower.unshift("C");
+  const cards = [...lower, r].map((rar, i) => ({ cid: "demo:" + i, name: DEMO_ART[i][0], desc: DEMO_ART[i][1], img: DEMO_ART[i][2], rarity: rar, reads: 9000 + i * 4300000, shiny: false, copies: 1, locked: false, tags: [], ids: [], new: i % 2 === 1 }));
+  PK.demo = true; closeDialog(); showCards(cards);
+}
+function openDemoPicker() {
+  openDialog("Voir les animations", el("div", { class: "dpick" },
+    el("p", { class: "muted", text: "Un tirage fictif : la carte de la rareté choisie arrive en dernier. Ça ne consomme aucun paquet et ne touche pas à ta collection." }),
+    ["C", "PC", "R", "SR", "UR", "L", "M"].map((r) => el("button", { class: "dchip", "data-r": r, style: `--c:${color(r)}`, text: label(r), onclick: () => startDemo(r) }))));
+}
 
 /* ---------- écran d'attente ---------- */
 function renderPacks() {
@@ -232,12 +246,15 @@ function updateProgress() {
   const best = PK.cards[t - 1], news = PK.cards.filter((c) => c.new).length;
   $("btn-flip-all").classList.add("hidden");
   $("pk-summary").textContent = `Paquet ouvert : ${t} cartes, dont ${news} nouvelle${news > 1 ? "s" : ""}. La plus rare : ${best.name} (${label(best.rarity)}).`;
-  $("btn-again").disabled = (S.data.me.packs ?? 0) < 1;
+  $("btn-again").disabled = !PK.demo && (S.data.me.packs ?? 0) < 1;
+  $("btn-again").textContent = PK.demo ? "Rejouer" : "Ouvrir un autre paquet";
+  if (PK.demo) $("pk-summary").textContent = `Démonstration : ${label(best.rarity)}. Ce paquet est fictif, ta collection n'a pas bougé.`;
   $("pk-end").classList.remove("hidden");
 }
 
 /* again = true : un nouveau paquet, sur un nouveau clic. La collection se relit à la fin (S.dirty). */
 function donePack(again) {
+  if (PK.demo) { const r = PK.cards[PK.cards.length - 1].rarity; PK.demo = false; $("reveal").classList.add("hidden"); $("packs-idle").classList.remove("hidden"); $("tab-packs").classList.remove("revealing"); if (again) startDemo(r); return; }
   $("reveal").classList.add("hidden"); $("packs-idle").classList.remove("hidden"); $("tab-packs").classList.remove("revealing");
   $("pack").classList.remove("tearing");
   loadJournal();
@@ -254,6 +271,7 @@ function resetPacks() { // déconnexion
 
 function bindPacks() {
   const p = $("pack"), w = $("pack-wrap");
+  $("btn-demo").onclick = openDemoPicker;
   p.onclick = () => openPack(); $("btn-open").onclick = () => openPack(); $("btn-gold").onclick = () => openPack("gold");
   p.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPack(); } };
   w.addEventListener("pointermove", (e) => tilt(e, p, 26));

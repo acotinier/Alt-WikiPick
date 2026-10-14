@@ -7,6 +7,9 @@ SITE_NEWS_URL = "https://wiki-pick.com/nouveautes"
 
 # kind : new (nouveau) | better (amélioré) | fix (corrigé)
 CHANGELOG = [
+    {"version": "0.5.1", "date": "2026-10-14", "title": "Voir les animations de chaque rareté", "items": [
+        ("new", "Un bouton « Voir les animations » dans l'onglet Paquets : un tirage fictif pour voir la mise en scène de chaque rareté, de la Commune à la Mythique. Aucun paquet n'est consommé et ta collection ne bouge pas."),
+    ]},
     {"version": "0.5.0", "date": "2026-10-14", "title": "Raretés officielles, sélection multiple et cartes qui s'illuminent", "items": [
         ("fix", "Les raretés portent les noms de l'appli officielle (Mythique, Légendaire, Exceptionnelle, Épique, Rare, Inhabituelle, Commune) et leurs couleurs : l'Exceptionnelle est dorée, la Légendaire orange."),
         ("new", "Les cartes sont entièrement teintées de leur rareté (fond, cadre, bandeau du nom, pied), comme sur l'appli officielle."),

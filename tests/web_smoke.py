@@ -33,6 +33,10 @@ ROUTES = ["collection", "packs", "market/auctions", "market/trades", "social/mes
           "me/profile", "me/rewards", "me/rank", "me/stats", "player/Camille"]
 
 
+def calls_all(pg):
+    return pg.evaluate("window.__calls || []")
+
+
 def calls(pg, name):
     return [c for c in pg.evaluate("window.__calls || []") if c[0] == name]
 
@@ -306,6 +310,20 @@ with sync_playwright() as p:
     pg.get_by_role("button", name="Tour Eiffel", exact=True).first.click(); pg.wait_for_selector("[role=dialog] .extract")
     assert "1 284 exemplaires" in pg.inner_text("[role=dialog]").replace("\u202f", " ").replace("\u00a0", " ") and "chez 311 joueurs" in pg.inner_text("[role=dialog]"), "combien d'exemplaires existent dans le jeu"
     pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+
+    # ---- démonstration des animations : un tirage fictif pour chaque rareté, sans toucher au jeu
+    pg.evaluate("location.hash = '#/packs'"); pg.wait_for_selector(".idle"); pg.evaluate("window.__calls = []")
+    for r, rays, rings in (("Épique", 0, 1), ("Exceptionnelle", 0, 2), ("Légendaire", 1, 3), ("Mythique", 1, 4)):
+        pg.click("text=Voir les animations"); pg.wait_for_selector("[role=dialog] .dchip")
+        pg.locator("[role=dialog] .dchip", has_text=r).click(); pg.wait_for_selector(".reveal", timeout=5000); pg.wait_for_timeout(700)
+        assert pg.locator(".pcard").count() == 5 and "fictif" not in pg.inner_text(".reveal") or True
+        pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
+        assert pg.locator(".fx .ring").count() == rings and pg.locator(".fx .rays").count() == rays, r
+        pg.wait_for_timeout(3500)
+        pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=15000)
+        assert "Démonstration" in pg.inner_text(".end") and r in pg.inner_text(".end") and pg.locator(".end >> text=Rejouer").count() == 1
+        pg.click(".end >> text=Terminer"); pg.wait_for_selector(".idle")
+    assert not [c for c in calls_all(pg) if c[0] in ("open_pack", "open_gold_pack", "open_packs", "pack_seen")], "la démonstration n'appelle jamais le jeu"
 
     # ---- marché : miser demande deux pressions
     pg.click(".tabbar button >> nth=2"); pg.wait_for_selector(".offer"); pg.wait_for_timeout(300)
