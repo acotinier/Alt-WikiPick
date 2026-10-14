@@ -199,31 +199,42 @@ async function flipAll() {
   $("btn-flip-all").disabled = false;
 }
 
-/* La mise en scène d'une belle carte : plus la rareté est haute (Épique, Exceptionnelle, Légendaire, Mythique), plus c'est démesuré. Tout est en CSS. */
-const FX_TIER = { SR: { c: "#9b5de5", dur: 1.2, flash: 0.35, rings: 1, sparks: 14 }, UR: { c: "#f6c945", dur: 1.7, flash: 0.55, rings: 2, sparks: 24, title: true },
-  L: { c: "#ff9a3c", dur: 2.3, flash: 0.8, rings: 3, sparks: 36, rays: true, title: true }, M: { c: "#f4d27a", dur: 3.2, flash: 1, rings: 4, sparks: 56, rays: true, veil: true, title: true } };
+/* La mise en scène d'une belle carte : plus la rareté est haute (Épique, Exceptionnelle, Légendaire, Mythique), plus c'est démesuré.
+   Tout est en CSS (fx.css, le MÊME fichier que la version web) ; t0 = le moment de l'explosion, les raretés hautes chargent d'abord. */
+const FX_TIER = {
+  SR: { c: "#9b5de5", dur: 1.2, t0: 0, flash: 0.35, rings: 1, sparks: 14 },
+  UR: { c: "#f6c945", dur: 2.2, t0: 0, flash: 0.6, rings: 3, sparks: 34, title: true },
+  L: { c: "#ff9a3c", dur: 4.0, t0: 0.5, flash: 0.9, rings: 4, sparks: 52, rays: 1, bolts: 4, conv: 14, orb: true, hero: "min(34vw, 240px)", title: true, confetti: 0 },
+  M: { c: "#f4d27a", dur: 7.0, t0: 1.4, flash: 1, rings: 6, sparks: 96, rays: 2, bolts: 8, conv: 40, orb: true, veil: true, hero: "min(40vw, 320px)", title: true, confetti: 54 },
+};
+const FX_MS = { SR: 1700, UR: 2700, L: 4500, M: 7500 }, FX_COLORS = ["#f4d27a", "#fff3c4", "#e9a23b", "#ffffff", "#c9871f"];
+const fxRnd = (i, seed) => { const k = Math.sin(i * 12.9898 + seed) * 43758.5453; return k - Math.floor(k); }; // suites fixes pour une rareté donnée
 let fxTimer = 0;
 function gala(c, node) {
   const t = FX_TIER[c.rarity];
   if (!t || reduced()) return;
   node.dataset.rv = c.rarity;
   document.querySelectorAll(".fx").forEach((x) => x.remove());
-  const fx = el("div", { class: "fx", style: `--c:${t.c};--dur:${t.dur}s;--fl:${t.flash}`, "aria-hidden": "true" });
-  if (t.veil) fx.append(el("i", { class: "fx-veil" }));
-  fx.append(el("i", { class: "fx-flash" }));
-  if (t.rays) fx.append(el("i", { class: "fx-rays" }));
-  for (let i = 0; i < t.rings; i++) fx.append(el("i", { class: "fx-ring", style: `--i:${i}` }));
-  for (let i = 0; i < t.sparks; i++) { // la suite est fixe pour une rareté donnée
-    const k = Math.sin(i * 12.9898 + 4.1414) * 43758.5453, j = k - Math.floor(k);
-    fx.append(el("i", { class: "fx-spark", style: `--a:${Math.round((i * 360) / t.sparks + j * 18)}deg;--d:${Math.round(26 + j * 30)}vmin;--t:${(0.9 + j * 0.7).toFixed(2)}s;--w:${(j * 0.18).toFixed(2)}s` }));
-  }
-  if (t.title) fx.append(el("b", { class: "fx-title", text: label(c.rarity) }));
+  const lite = (navigator.hardwareConcurrency || 8) <= 4, half = (n) => (lite ? Math.ceil(n / 2) : n);
+  const fx = el("div", { class: "fx", style: `--c:${t.c};--dur:${t.dur}s;--t0:${t.t0}s;--fl:${t.flash};--hw:${t.hero || "auto"}`, "aria-hidden": "true" });
+  const add = (cls, style) => fx.append(el("i", { class: cls, style: style || "" }));
+  if (t.veil) add("fx-veil");
+  if (t.orb) add("fx-orb");
+  const nc = half(t.conv || 0); for (let i = 0; i < nc; i++) { const j = fxRnd(i, 9.7); add("fx-conv", `--a:${Math.round((i * 360) / nc + j * 25)}deg;--d:${Math.round(46 + j * 22)}vmin;--w:${(j * t.t0 * 0.4).toFixed(2)}s`); }
+  add("fx-flash");
+  for (let i = 0; i < (t.rays || 0); i++) add("fx-rays" + (i === 1 ? " b" : ""));
+  for (let i = 0; i < t.rings; i++) add("fx-ring", `--i:${i}`);
+  const nb = t.bolts || 0; for (let i = 0; i < nb; i++) { const j = fxRnd(i, 2.3); add("fx-bolt", `--a:${Math.round((i * 360) / nb + j * 30) + 180}deg;--w:${(j * 0.3).toFixed(2)}s`); }
+  const ns = half(t.sparks); for (let i = 0; i < ns; i++) { const j = fxRnd(i, 4.14); add("fx-spark", `--a:${Math.round((i * 360) / ns + j * 18)}deg;--d:${Math.round(26 + j * 34)}vmin;--t:${(0.9 + j * 0.8).toFixed(2)}s;--w:${(j * 0.2).toFixed(2)}s`); }
+  const nk = half(t.confetti || 0); for (let i = 0; i < nk; i++) { const j = fxRnd(i, 6.1), j2 = fxRnd(i, 1.9); add("fx-conf", `left:${Math.round(j * 100)}%;--x:${Math.round((j2 - 0.5) * 24)}vw;--r:${Math.round(360 + j * 900)}deg;--t:${(2.6 + j2 * 1.6).toFixed(2)}s;--w:${(fxRnd(i, 3.3) * 1.8).toFixed(2)}s;--k:${FX_COLORS[i % FX_COLORS.length]}`); }
+  if (t.hero) fx.append(el("div", { class: "fx-hero" }, cardNode(c, null)));
+  if (t.title) fx.append(el("b", { class: "fx-title serif" }, [...label(c.rarity).toUpperCase()].map((ch, i) => el("i", { style: `--i:${i}`, text: ch === " " ? " " : ch }))));
   document.body.append(fx);
-  clearTimeout(fxTimer); fxTimer = setTimeout(() => fx.remove(), (t.dur + 0.3) * 1000);
-  if (c.rarity === "L" || c.rarity === "M") { // l'écran tremble
+  clearTimeout(fxTimer); fxTimer = setTimeout(() => fx.remove(), FX_MS[c.rarity]);
+  if (c.rarity === "L" || c.rarity === "M") { // l'écran tremble (un grondement pendant la charge, puis le choc)
     const r = $("reveal"), k = c.rarity === "M" ? "fx-shake-m" : "fx-shake-l";
     r.classList.remove("fx-shake-l", "fx-shake-m"); void r.offsetWidth; r.classList.add(k);
-    setTimeout(() => r.classList.remove(k), c.rarity === "M" ? 950 : 650);
+    setTimeout(() => r.classList.remove(k), c.rarity === "M" ? 3300 : 1900);
   }
 }
 function burst(n, count) { // étincelles de la couleur de la rareté

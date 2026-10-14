@@ -1,0 +1,62 @@
+/* La mise en scène d'une belle carte à l'ouverture d'un paquet. UN SEUL fichier, partagé par la version web (importé par RarityFx.svelte) et par l'appli
+   Windows (desktop/web/fx.css, copie identique : un test vérifie qu'elles ne divergent pas). Tout est en CSS, rien qu'opacité et transformations.
+   Variables : --c la couleur, --dur la durée totale, --t0 le moment de l'explosion (les raretés les plus hautes chargent d'abord). */
+.fx { --t0: 0s; position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; perspective: 1200px; animation: fxk-life var(--dur) linear forwards; }
+@keyframes fxk-life { 0%, 91% { opacity: 1; } 100% { opacity: 0; } }
+.fx i, .fx b, .fx-hero { position: absolute; font-style: normal; }
+
+/* le voile sombre (Mythique) */
+.fx-veil { inset: 0; background: radial-gradient(circle at 50% 45%, rgba(24, 14, 0, .5) 0%, rgba(0, 0, 0, .95) 72%); opacity: 0; animation: fxk-veil var(--dur) ease-out forwards; }
+@keyframes fxk-veil { 0% { opacity: 0; } 7% { opacity: 1; } 91% { opacity: 1; } 100% { opacity: 0; } }
+
+/* la charge : une boule d'énergie qui gonfle et des points de lumière qui convergent */
+.fx-orb { left: 50%; top: 45%; width: 62vmin; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0; scale: .02;
+  background: radial-gradient(circle, #fff 0 7%, var(--c) 22%, transparent 66%); animation: fxk-orb var(--t0) ease-in forwards; }
+@keyframes fxk-orb { 0% { scale: .02; opacity: 0; } 18% { opacity: .9; } 55% { scale: .7; opacity: .75; } 88% { scale: 1.15; opacity: 1; } 100% { scale: 2.8; opacity: 0; } }
+.fx-conv { left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px var(--c), 0 0 22px var(--c); opacity: 0;
+  animation: fxk-conv calc(var(--t0) * .6) cubic-bezier(.5, 0, .9, .6) forwards; animation-delay: var(--w); }
+@keyframes fxk-conv { 0% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(1.5); } }
+
+/* l'explosion */
+.fx-flash { inset: 0; background: radial-gradient(circle at 50% 45%, #fff 0, #fff 6%, var(--c) 36%, transparent 72%); opacity: 0; animation: fxk-flash .95s ease-out forwards; animation-delay: var(--t0); }
+@keyframes fxk-flash { 0% { opacity: 0; } 9% { opacity: var(--fl); } 100% { opacity: 0; } }
+.fx-ring { left: 50%; top: 45%; width: 30vmin; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 36px var(--c), inset 0 0 36px var(--c);
+  opacity: 0; animation: fxk-ring 1.25s cubic-bezier(.1, .7, .2, 1) forwards; animation-delay: calc(var(--t0) + var(--i) * .15s); }
+@keyframes fxk-ring { 0% { scale: .1; opacity: .95; } 100% { scale: 3.8; opacity: 0; } }
+.fx-rays { left: 50%; top: 45%; width: 170vmax; aspect-ratio: 1; translate: -50% -50%; opacity: 0; mask: radial-gradient(circle, #000 0 7%, transparent 44%);
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--c) 70%, #fff) 0 3deg, transparent 3deg 11deg);
+  animation: fxk-rays calc(var(--dur) - var(--t0)) ease-out forwards; animation-delay: var(--t0); }
+.fx-rays.b { background: repeating-conic-gradient(from 5deg, #fff 0 1.4deg, transparent 1.4deg 7deg); animation-name: fxk-rays-b; }
+@keyframes fxk-rays { 0% { opacity: 0; rotate: 0deg; scale: .4; } 14% { opacity: .85; } 100% { opacity: 0; rotate: 60deg; scale: 1.1; } }
+@keyframes fxk-rays-b { 0% { opacity: 0; rotate: 0deg; scale: .3; } 12% { opacity: .55; } 100% { opacity: 0; rotate: -80deg; scale: 1.2; } }
+.fx-bolt { left: 50%; top: 45%; width: 16px; height: 62vmax; transform-origin: 50% 0; transform: rotate(var(--a)); opacity: 0;
+  clip-path: polygon(46% 0, 74% 9%, 34% 20%, 78% 33%, 30% 46%, 72% 60%, 36% 74%, 64% 88%, 48% 100%, 42% 100%, 28% 88%, 62% 74%, 22% 60%, 66% 46%, 18% 33%, 60% 20%, 26% 9%);
+  background: linear-gradient(180deg, #fff 0, #fff 14%, var(--c) 50%, transparent); filter: drop-shadow(0 0 8px var(--c));
+  animation: fxk-bolt .55s linear forwards; animation-delay: calc(var(--t0) + var(--w)); }
+@keyframes fxk-bolt { 0% { opacity: 0; } 8% { opacity: 1; } 18% { opacity: .1; } 28% { opacity: 1; } 45% { opacity: .2; } 55% { opacity: .9; } 100% { opacity: 0; } }
+.fx-spark { left: 50%; top: 45%; width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--c) 55%, #fff); box-shadow: 0 0 12px var(--c); opacity: 0;
+  animation: fxk-spark var(--t) cubic-bezier(.1, .8, .3, 1) forwards; animation-delay: calc(var(--t0) + var(--w)); }
+@keyframes fxk-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(.2); } }
+
+/* la pluie d'or */
+.fx-conf { top: -4vh; width: 9px; height: 16px; border-radius: 2px; opacity: 0; background: var(--k); animation: fxk-conf var(--t) linear forwards; animation-delay: calc(var(--t0) + .5s + var(--w)); }
+@keyframes fxk-conf { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 8% { opacity: 1; } 100% { opacity: .9; transform: translate(var(--x), 112vh) rotate(var(--r)); } }
+
+/* la carte, géante, qui arrive en tournant */
+.fx-hero { left: 50%; top: 45%; width: var(--hw); translate: -50% -50%; opacity: 0; filter: drop-shadow(0 0 38px var(--c)) drop-shadow(0 0 90px var(--c));
+  animation: fxk-hero calc(var(--dur) - var(--t0)) cubic-bezier(.2, .9, .25, 1.05) forwards; animation-delay: var(--t0); }
+@keyframes fxk-hero { 0% { opacity: 0; transform: rotateY(-540deg) scale(.04); } 20% { opacity: 1; transform: rotateY(0) scale(1.2); } 30% { transform: scale(1); } 52% { transform: scale(1.04) translateY(-6px); } 74% { transform: scale(1) translateY(4px); } 90% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
+
+/* le titre, lettre par lettre */
+.fx-title { left: 0; right: 0; bottom: 13%; display: flex; justify-content: center; gap: .03em; font: 700 clamp(34px, 11vw, 88px)/1 var(--serif); letter-spacing: -.01em;
+  color: color-mix(in srgb, var(--c) 35%, #fff); text-shadow: 0 0 22px var(--c), 0 0 60px var(--c), 0 4px 30px rgba(0, 0, 0, .85); }
+.fx-title i { position: static; display: inline-block; opacity: 0; animation: fxk-letter .8s cubic-bezier(.2, 1.5, .4, 1) forwards; animation-delay: calc(var(--t0) + .85s + var(--i) * .07s); }
+@keyframes fxk-letter { 0% { opacity: 0; transform: translateY(-46px) scale(2.4); filter: blur(10px); } 100% { opacity: 1; transform: none; filter: blur(0); } }
+
+/* l'écran qui tremble : un grondement pendant la charge, puis le choc */
+.fx-shake-l { animation: fxk-shk-l 1.4s linear .45s; }
+.fx-shake-m { animation: fxk-shk-m 3.2s linear; }
+@keyframes fxk-shk-l { 8% { translate: -8px 5px; } 18% { translate: 9px -6px; } 30% { translate: -7px -4px; } 42% { translate: 6px 5px; } 56% { translate: -4px 3px; } 70% { translate: 3px -2px; } 85% { translate: -1px 1px; } 100% { translate: 0 0; } }
+@keyframes fxk-shk-m { 3% { translate: 1px -1px; } 6% { translate: -1px 1px; } 9% { translate: 2px 1px; } 12% { translate: -2px -1px; } 15% { translate: 2px -2px; } 18% { translate: -3px 2px; } 21% { translate: 3px 2px; } 24% { translate: -3px -3px; } 27% { translate: 4px -2px; } 30% { translate: -4px 3px; } 33% { translate: 4px 4px; } 36% { translate: -5px -3px; }
+  40.5% { translate: 0 0; } 42% { translate: -16px 11px; } 46% { translate: 17px -12px; } 50% { translate: -14px -9px; } 55% { translate: 11px 10px; } 60% { translate: -8px 6px; } 67% { translate: 6px -5px; } 75% { translate: -3px 3px; } 85% { translate: 2px -1px; } 100% { translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .fx-ring, .fx-rays, .fx-spark, .fx-conv, .fx-conf, .fx-bolt, .fx-orb { display: none; } }

@@ -186,11 +186,11 @@ with sync_playwright() as p:
     pg.locator(".pcard").nth(0).click(); pg.wait_for_timeout(500)
     assert pg.locator(".fx").count() == 0, "une carte commune : aucune mise en scène"
     pg.locator(".pcard").nth(3).click(); pg.wait_for_timeout(400)
-    assert pg.locator(".fx").count() == 1 and pg.locator(".fx .title").count() == 0 and pg.locator(".fx .rays").count() == 0, "Épique : éclat et étincelles"
+    assert pg.locator(".fx").count() == 1 and pg.locator(".fx .fx-title").count() == 0 and pg.locator(".fx .fx-rays").count() == 0, "Épique : éclat et étincelles"
     pg.wait_for_timeout(2200)
     pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
-    assert pg.locator(".fx .rays").count() == 1 and "Légendaire" in pg.inner_text(".fx .title") and pg.locator(".fx .ring").count() == 3 and pg.locator(".fx .spark").count() > 30, "Légendaire : rayons, trois ondes, titre"
-    pg.wait_for_timeout(3400)
+    assert pg.locator(".fx .fx-rays").count() == 1 and "LÉGENDAIRE" in pg.locator(".fx .fx-title").evaluate("e => e.textContent") and pg.locator(".fx .fx-ring").count() == 4 and pg.locator(".fx .fx-spark").count() > 20 and pg.locator(".fx .fx-hero .card").count() == 1, "Légendaire : rayons, ondes, carte géante, titre"
+    pg.wait_for_timeout(4800)
     assert pg.locator(".fx").count() == 0, "la mise en scène s'efface seule"
     pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=15000); pg.click("text=Terminer"); pg.wait_for_selector(".idle")
     pg.evaluate("window.__mock.packs = 3"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(600)
@@ -313,12 +313,13 @@ with sync_playwright() as p:
 
     # ---- démonstration des animations : un tirage fictif pour chaque rareté, sans toucher au jeu
     pg.evaluate("location.hash = '#/packs'"); pg.wait_for_selector(".idle"); pg.evaluate("window.__calls = []")
-    for r, rays, rings in (("Épique", 0, 1), ("Exceptionnelle", 0, 2), ("Légendaire", 1, 3), ("Mythique", 1, 4)):
+    for r, rays, rings in (("Épique", 0, 1), ("Exceptionnelle", 0, 3), ("Légendaire", 1, 4), ("Mythique", 2, 6)):
         pg.click("text=Voir les animations"); pg.wait_for_selector("[role=dialog] .dchip")
         pg.locator("[role=dialog] .dchip", has_text=r).click(); pg.wait_for_selector(".reveal", timeout=5000); pg.wait_for_timeout(700)
         assert pg.locator(".pcard").count() == 5 and "fictif" not in pg.inner_text(".reveal") or True
         pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
-        assert pg.locator(".fx .ring").count() == rings and pg.locator(".fx .rays").count() == rays, r
+        assert pg.locator(".fx .fx-ring").count() == rings and pg.locator(".fx .fx-rays").count() == rays, r
+        if r == "Mythique": assert pg.locator(".fx .fx-veil").count() == 1 and pg.locator(".fx .fx-bolt").count() == 8 and pg.locator(".fx .fx-hero").count() == 1 and pg.locator(".fx .fx-conf").count() > 20, "Mythique : voile, foudres, carte géante, pluie d'or"
         pg.wait_for_timeout(3500)
         pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=15000)
         assert "Démonstration" in pg.inner_text(".end") and r in pg.inner_text(".end") and pg.locator(".end >> text=Rejouer").count() == 1

@@ -7,6 +7,10 @@ SITE_NEWS_URL = "https://wiki-pick.com/nouveautes"
 
 # kind : new (nouveau) | better (amélioré) | fix (corrigé)
 CHANGELOG = [
+    {"version": "0.5.2", "date": "2026-10-14", "title": "Des animations démesurées", "items": [
+        ("new", "Mythique : l'écran s'assombrit, l'énergie converge et gronde, puis explose (éclair blanc, six ondes, deux couches de rayons, huit foudres, près de cent étincelles), une pluie d'or tombe, la carte arrive géante en tournant et le titre s'écrit lettre par lettre. L'écran tremble et le téléphone vibre."),
+        ("better", "Légendaire : charge, explosion, rayons, foudres et carte géante. Exceptionnelle : trois ondes et un titre lettre par lettre. Les appareils modestes jouent la même scène avec moitié moins de particules."),
+    ]},
     {"version": "0.5.1", "date": "2026-10-14", "title": "Voir les animations de chaque rareté", "items": [
         ("new", "Un bouton « Voir les animations » dans l'onglet Paquets : un tirage fictif pour voir la mise en scène de chaque rareté, de la Commune à la Mythique. Aucun paquet n'est consommé et ta collection ne bouge pas."),
     ]},

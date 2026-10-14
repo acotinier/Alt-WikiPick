@@ -1358,25 +1358,7 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 }
 #mgrid.g-s .card .pic, .tcards .card .pic, .tcgrid .card .pic, .cbinvteam .card .pic, .cbslots.mini .card .pic { margin: 4px 4px 0; }
 
-/* ================= mise en scène des belles cartes (Épique et plus) à l'ouverture d'un paquet ================= */
-.fx { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; animation: fxk-life var(--dur) linear forwards; }
-@keyframes fxk-life { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
-.fx-veil { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, transparent 8%, rgba(0, 0, 0, .82) 78%); opacity: 0; animation: fxk-veil var(--dur) ease-out forwards; }
-@keyframes fxk-veil { 0% { opacity: 0; } 14% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
-.fx-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fff, var(--c) 34%, transparent 70%); opacity: 0; animation: fxk-flash .8s ease-out forwards; }
-@keyframes fxk-flash { 0% { opacity: 0; } 10% { opacity: var(--fl); } 100% { opacity: 0; } }
-.fx-ring { position: absolute; left: 50%; top: 45%; width: 30vmin; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 36px var(--c), inset 0 0 36px var(--c);
-  opacity: 0; animation: fxk-ring 1.15s cubic-bezier(.1, .7, .2, 1) forwards; animation-delay: calc(var(--i) * .17s); }
-@keyframes fxk-ring { 0% { scale: .1; opacity: .95; } 100% { scale: 3.6; opacity: 0; } }
-.fx-rays { position: absolute; left: 50%; top: 45%; width: 170vmax; aspect-ratio: 1; translate: -50% -50%; opacity: 0; animation: fxk-rays var(--dur) ease-out forwards;
-  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--c) 70%, #fff) 0 3deg, transparent 3deg 11deg); mask: radial-gradient(circle, #000 0 7%, transparent 44%); }
-@keyframes fxk-rays { 0% { opacity: 0; rotate: 0deg; scale: .4; } 20% { opacity: .8; } 100% { opacity: 0; rotate: 55deg; scale: 1.05; } }
-.fx-spark { position: absolute; left: 50%; top: 45%; width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--c) 55%, #fff); box-shadow: 0 0 12px var(--c);
-  opacity: 0; animation: fxk-spark var(--t) cubic-bezier(.1, .8, .3, 1) forwards; animation-delay: var(--w); }
-@keyframes fxk-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(.2); } }
-.fx-title { position: absolute; left: 0; right: 0; bottom: 20%; text-align: center; font: 700 clamp(30px, 6vw, 72px)/1 var(--serif); letter-spacing: -.02em;
-  color: color-mix(in srgb, var(--c) 40%, #fff); text-shadow: 0 0 24px var(--c), 0 4px 30px rgba(0, 0, 0, .8); opacity: 0; animation: fxk-title var(--dur) ease-out forwards; }
-@keyframes fxk-title { 0% { opacity: 0; transform: scale(.7) translateY(14px); letter-spacing: .2em; } 18% { opacity: 1; transform: none; letter-spacing: -.02em; } 80% { opacity: 1; } 100% { opacity: 0; } }
+/* ================= mise en scène des belles cartes : voir fx.css (partagé avec la version web) ================= */
 .pcard.pcard.open[data-rv="SR"] { animation: fxrv-sr .9s .2s ease-out; }
 .pcard.pcard.open[data-rv="UR"] { animation: fxrv-ur 1.2s .2s ease-out; }
 .pcard.pcard.open[data-rv="L"] { animation: fxrv-l 1.6s .2s ease-out; z-index: 3; }
@@ -1385,9 +1367,6 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 @keyframes fxrv-ur { 30% { transform: scale(1.1) rotate(-1deg); filter: drop-shadow(0 0 30px #f6c945); } 60% { transform: scale(1.05) rotate(.8deg); } }
 @keyframes fxrv-l { 20% { transform: scale(1.22) rotate(-2deg); filter: drop-shadow(0 0 44px #ff9a3c) brightness(1.25); } 50% { transform: scale(1.12) rotate(1.4deg); filter: drop-shadow(0 0 34px #ff9a3c); } 75% { transform: scale(1.06); } }
 @keyframes fxrv-m { 12% { transform: scale(1.35) rotate(-2.5deg); filter: drop-shadow(0 0 60px #f4d27a) brightness(1.4); } 45% { transform: scale(1.22) rotate(1.8deg); filter: drop-shadow(0 0 46px #f4d27a) brightness(1.15); } 75% { transform: scale(1.1); filter: drop-shadow(0 0 30px #f4d27a); } }
-.fx-shake-l { animation: fxk-shk .6s linear; } .fx-shake-m { animation: fxk-shk .9s linear; }
-@keyframes fxk-shk { 10% { translate: -5px 3px; } 20% { translate: 6px -4px; } 30% { translate: -6px -2px; } 40% { translate: 5px 4px; } 50% { translate: -4px 2px; } 60% { translate: 3px -3px; } 70% { translate: -2px 2px; } 100% { translate: 0 0; } }
-@media (prefers-reduced-motion: reduce) { .fx-ring, .fx-rays, .fx-spark { display: none; } }
 
 .card .copies { top: calc(2.75em + 14px); right: 16px; }
 

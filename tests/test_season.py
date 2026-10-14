@@ -163,5 +163,10 @@ def test_activity_signal_failure_is_not_retried_for_a_minute_and_expiry_is_repor
 
 def test_news_lists_versions_newest_first():
     n = news()
-    assert n["site_url"].startswith("https://wiki-pick.com/") and n["versions"][0]["version"] == "0.5.1"
+    assert n["site_url"].startswith("https://wiki-pick.com/") and n["versions"][0]["version"] == "0.5.2"
     assert all(i["kind"] in ("new", "better", "fix") for v in n["versions"] for i in v["items"])
+
+
+def test_effects_stylesheet_is_the_same_in_both_apps():
+    root = Path(__file__).resolve().parents[1]
+    assert (root / "webapp/src/ui/fx.css").read_bytes() == (root / "desktop/web/fx.css").read_bytes(), "fx.css : la copie du bureau doit rester identique à celle du web"

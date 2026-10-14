@@ -77,11 +77,14 @@
   // une belle carte (Épique et plus) déclenche une mise en scène d'autant plus folle que la rareté est haute
   const GALA = ['SR', 'UR', 'L', 'M'];
   let fx = $state(null), shake = $state(false), fxN = 0;
+  const FX_MS = { SR: 1700, UR: 2700, L: 4500, M: 7500 };   // durée de chaque mise en scène (RarityFx), avec une marge
+  const BUZZ = { SR: [30], UR: [40, 40, 80], L: [60, 50, 60, 200], M: [30, 40, 30, 40, 40, 40, 60, 40, 80, 40, 400, 80, 120] };
   function celebrate(c) {
     if (reduced || !GALA.includes(c.rarity)) return;
-    fx = { r: c.rarity, n: ++fxN, title: app.names[c.rarity] || c.rarity };
-    if (c.rarity === 'L' || c.rarity === 'M') { shake = c.rarity; setTimeout(() => (shake = false), c.rarity === 'M' ? 900 : 600); }
-    const n = fxN; setTimeout(() => { if (fx && fx.n === n) fx = null; }, 3400);
+    fx = { r: c.rarity, n: ++fxN, title: app.names[c.rarity] || c.rarity, card: c };
+    if (c.rarity === 'L' || c.rarity === 'M') { shake = c.rarity; setTimeout(() => (shake = false), c.rarity === 'M' ? 3300 : 1900); }
+    try { navigator.vibrate && navigator.vibrate(BUZZ[c.rarity]); } catch { /* pas de vibreur : tant pis */ }
+    const n = fxN; setTimeout(() => { if (fx && fx.n === n) fx = null; }, FX_MS[c.rarity]);
   }
   const flip = (i) => { if (!flipped.includes(i)) { flipped = [...flipped, i]; celebrate(cards[i]); } else openCard(cards[i]); };
   async function flipAll() { // « tout retourner » : seule la plus belle carte a droit à sa mise en scène
@@ -164,7 +167,7 @@
     </section>
   {/if}
 {:else}
-  <section class="reveal" class:many={cards.length > 6} class:shake-l={shake === 'L'} class:shake-m={shake === 'M'} style:--n={cards.length} style:--rows={Math.ceil(cards.length / 3)}>
+  <section class="reveal" class:many={cards.length > 6} class:fx-shake-l={shake === 'L'} class:fx-shake-m={shake === 'M'} style:--n={cards.length} style:--rows={Math.ceil(cards.length / 3)}>
     <div class="pcards">
       {#each cards as c, i (c.cid + i)}
         <button class="pcard" class:open={flipped.includes(i)} class:top={isTop(c)} data-rv={flipped.includes(i) && GALA.includes(c.rarity) ? c.rarity : null} style:--i={i} style:--c={color(c.rarity)} aria-label={flipped.includes(i) ? c.name : 'Retourner la carte'} onclick={() => flip(i)}>
@@ -194,7 +197,7 @@
   <div class="dpick">{#each DEMO_RARITIES as r}<button class="dchip" style:--c={color(r)} onclick={() => startDemo(r)}>{app.names[r] || r}</button>{/each}</div>
 </Sheet>
 
-{#if fx}{#key fx.n}<RarityFx r={fx.r} title={fx.title} />{/key}{/if}
+{#if fx}{#key fx.n}<RarityFx r={fx.r} title={fx.title} card={fx.card} />{/key}{/if}
 
 <Sheet open={!!ask} onclose={cancel} title="Avant d'ouvrir ton paquet">
   {#if ask}<Challenge challenge={ask.q} onanswer={answer} onother={other} oncancel={cancel} />{/if}
@@ -259,8 +262,6 @@
   @keyframes rv-ur { 30% { transform: scale(1.1) rotate(-1deg); filter: drop-shadow(0 0 30px #f6c945); } 60% { transform: scale(1.05) rotate(.8deg); } }
   @keyframes rv-l { 20% { transform: scale(1.22) rotate(-2deg); filter: drop-shadow(0 0 44px #ff9a3c) brightness(1.25); } 50% { transform: scale(1.12) rotate(1.4deg); filter: drop-shadow(0 0 34px #ff9a3c); } 75% { transform: scale(1.06); } }
   @keyframes rv-m { 12% { transform: scale(1.35) rotate(-2.5deg); filter: drop-shadow(0 0 60px #f4d27a) brightness(1.4); } 45% { transform: scale(1.22) rotate(1.8deg); filter: drop-shadow(0 0 46px #f4d27a) brightness(1.15); } 75% { transform: scale(1.1); filter: drop-shadow(0 0 30px #f4d27a); } }
-  .shake-l { animation: shk .6s linear; } .shake-m { animation: shk .9s linear; }
-  @keyframes shk { 10% { translate: -5px 3px; } 20% { translate: 6px -4px; } 30% { translate: -6px -2px; } 40% { translate: 5px 4px; } 50% { translate: -4px 2px; } 60% { translate: 3px -3px; } 70% { translate: -2px 2px; } 100% { translate: 0 0; } }
   .pcard.open.top { animation: deal .55s backwards, glow 1.3s .35s ease-out; } @keyframes glow { 30% { filter: drop-shadow(0 0 26px var(--c)); } }
   .new { position: absolute; top: 6px; left: 6px; z-index: 3; padding: 1px 9px; font: 600 11px/17px var(--sans); color: var(--on-ivory); background: var(--ivory); border-radius: 99px; }
   .pbar, .end { flex: none; height: 104px; align-content: center; }

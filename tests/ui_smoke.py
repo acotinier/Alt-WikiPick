@@ -478,7 +478,7 @@ with sync_playwright() as p:
         pg.click("#btn-demo"); pg.wait_for_selector("#dialog-body .dchip")
         pg.locator("#dialog-body .dchip", has_text=r).click(); pg.wait_for_selector("#reveal:not(.hidden)", timeout=5000); pg.wait_for_timeout(900)
         pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
-        assert pg.locator(".fx").count() == 1 and pg.locator(".fx .fx-rays").count() == rays, r
+        assert pg.locator(".fx").count() == 1 and pg.locator(".fx .fx-rays").count() == (2 if r == "Mythique" else rays), r
         pg.wait_for_timeout(3600)
         pg.click("#btn-flip-all"); pg.wait_for_selector("#pk-end:not(.hidden)", timeout=8000)
         assert "Démonstration" in pg.inner_text("#pk-summary") and pg.inner_text("#btn-again") == "Rejouer"
@@ -997,8 +997,8 @@ with sync_playwright() as p:
     pw.locator(".wrow button", has_text="Réclamer").click(); pw.wait_for_timeout(400); assert W('claim:bienvenue:"b1"') == 1
     pw.locator(".ach.ready button").click(); pw.wait_for_timeout(400); assert W('claim:succes:"c10"') == 1
     pw.evaluate("S.data.rewards.streak.ready = true; renderSocialBadges()"); pw.wait_for_timeout(200)
-    pw.locator(".rw-card.streak button", has_text="Récupérer le jour 3").click(); pw.wait_for_timeout(500)
-    assert W("claim:serie:null") == 1 and "Jour 3 : Un paquet doré" in pw.inner_text("#toast")
+    pw.locator(".rw-card.streak button", has_text="Récupérer le jour 3").click(); pw.wait_for_timeout(800)
+    assert W("claim:serie:null") == 1 and "Jour 3 : Un paquet doré" in pw.inner_text("#toast"), (W("claim:serie:null"), pw.inner_text("#toast"))
     pw.keyboard.press("8"); pw.wait_for_timeout(300); assert pw.is_visible("#tab-friends"), "raccourci clavier : 8 = Amis"
 
     assert not errw, errw
