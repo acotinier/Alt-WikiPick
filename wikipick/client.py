@@ -255,6 +255,14 @@ class WikiPickClient:
     def card_lock(self, card_id, cid, shiny, on):
         return self._post_json("/api/card/lock", {"card_id": card_id, "cid": cid, "shiny": 1 if shiny else 0, "on": bool(on)})
 
+    def cards_lock(self, ids, on):
+        """Verrouille (ou déverrouille) des exemplaires en lot : renvoie les numéros que le serveur a vraiment changés."""
+        return self._post_json("/api/card/lock/bulk", {"on": bool(on), "ids": ids})
+
+    def cards_tag(self, cids, tag_id, pose):
+        """Pose (pose=True) ou retire une étiquette sur plusieurs articles."""
+        return self._post_json("/api/cards/tags", {"cids": cids, "tag_id": tag_id, "pose": bool(pose)})
+
     def card_for_sale(self, card_id, on):
         return self._post_json("/api/card/avendre", {"card_id": card_id, "on": bool(on)})
 

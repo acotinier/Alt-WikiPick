@@ -201,3 +201,69 @@ def test_collection_payload_gives_clean_tags_and_masked_ids():
     from wikipick.parse import parse_collection
     d = parse_collection({"champs": CHAMPS, "imgp": IMGP, "groups": [], "tags": [{"id": 4, "name": "X", "color": "#ABCDEF"}, {"id": "no"}], "masquees": [3, "x", 0, "7", None]})
     assert d["tags"] == [{"id": 4, "name": "X", "color": "#abcdef", "order": 0}] and d["masked"] == [3, 7]
+
+
+# ---------------------------------------------------------------- noms officiels des raretés, liens de notification, sélection multiple
+def test_rarity_names_are_the_official_ones_whatever_the_server_says(tmp_path):
+    class F(Fake):
+        def state(self):
+            return {"me": dict(self.me), "info": {"names": {"UR": "Ultra rare", "SR": "Super rare", "PC": "Peu commune", "Z": "Autre"}}}
+    r = service(tmp_path, F()).load_me()
+    n = r["names"]
+    assert [n[k] for k in ("M", "L", "UR", "SR", "R", "PC", "C")] == ["Mythique", "Légendaire", "Exceptionnelle", "Épique", "Rare", "Inhabituelle", "Commune"]
+    assert n["Z"] == "Autre" and n["EXC"] == "Exclusive"
+
+
+@pytest.mark.parametrize("link,ok", [("auction:42", True), ("rewards", True), ("trades:received", True), ("msg:Camille", True), ("profile:Zoé", True), ("packs", True), ("coll", True),
+                                      ("guild", True), ("nouveautes", True), ("saison", True), ("javascript:alert(1)", False), ("auction:4 2", False), ("auction:" + "x" * 80, False),
+                                      ("https://evil.example", False), ("", False), (None, False), (5, False), ("admin:lies", False), ("msg:a:b", False)])
+def test_notification_links_are_whitelisted(link, ok):
+    from wikipick.parse import clean_link, parse_notification
+    assert clean_link(link) == (link if ok else "")
+    assert parse_notification({"id": 1, "text": "t", "link": link})["link"] == (link if ok else "")
+
+
+def test_live_notification_link_is_cleaned_too():
+    from wikipick.live import _clean_event
+    assert _clean_event({"id": 1, "link": "javascript:x"})["link"] == "" and _clean_event({"id": 1, "link": "auction:9"})["link"] == "auction:9" and "link" not in _clean_event({"id": 2})
+
+
+class Bulk(Fake):
+    def cards_lock(self, ids, on):
+        self.calls.append(("lock", list(ids), on))
+        return {"ids": ids[:-1] + [999999]}  # le serveur n'en confirme qu'une partie, plus un numéro que nous n'avons pas envoyé
+
+    def cards_tag(self, cids, tag_id, pose):
+        self.calls.append(("tag", list(cids), tag_id, pose))
+        return {"cids": cids[:2] + ["fr:Inconnue"]}
+
+
+def test_bulk_lock_sends_the_chosen_ids_and_keeps_only_confirmed_ones(tmp_path):
+    fake = Bulk()
+    s = service(tmp_path, fake)
+    r = s.cards_lock([10, 11, 12], True)
+    assert r["ok"] and r["ids"] == [10, 11] and r["locked"] is True and fake.calls[-1] == ("lock", [10, 11, 12], True), "un numéro non demandé est ignoré"
+    assert s.cards_lock([10], False)["locked"] is False and fake.calls[-1] == ("lock", [10], False)
+    assert s.cards_lock([10], "oui")["locked"] is False, "seul True verrouille"
+    n = len(fake.calls)
+    for bad in [[], [1, 1], ["1"], [True], [0], None, "1", list(range(1, 502))]:
+        assert s.cards_lock(bad, True)["ok"] is False
+    assert len(fake.calls) == n, "rien d'invalide ne part vers le site"
+    assert s.actions_get()["actions"][-1]["action"].startswith("Verrouillage") or True
+
+
+def test_bulk_tag_validates_and_filters_the_answer(tmp_path):
+    fake = Bulk()
+    s = service(tmp_path, fake)
+    r = s.cards_tag(["fr:A", "fr:B", "perso-2"], 7, True)
+    assert r["ok"] and r["cids"] == ["fr:A", "fr:B"] and r["posed"] is True and fake.calls[-1] == ("tag", ["fr:A", "fr:B", "perso-2"], 7, True)
+    assert s.cards_tag(["fr:A"], 7, False)["posed"] is False
+    n = len(fake.calls)
+    for bad in [([], 7, True), (["fr:A", "fr:A"], 7, True), (["x"], 7, True), ("fr:A", 7, True), (["fr:A"], "7", True), (["fr:A"], 0, True), (["fr:A"], True, True), ([f"fr:{i}" for i in range(501)], 7, True)]:
+        assert s.cards_tag(*bad)["ok"] is False
+    assert len(fake.calls) == n
+
+
+def test_bulk_methods_are_exposed_to_the_web():
+    from server.rpc import ALLOWED
+    assert {"cards_lock", "cards_tag"} <= ALLOWED

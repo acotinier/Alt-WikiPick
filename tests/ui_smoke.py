@@ -122,6 +122,8 @@ window.pywebview={api:{
  season_active:async()=>{window.__calls.push('season_active');return {ok:true,sent:true,open:true,reason:'',wait:2,level:12,xp:1250,xp_level:1200,xp_next:1300,subscriber:window.__spSub,active_minutes:5,to_take:1};},
  season_equip:async(k,key)=>{window.__calls.push('season_equip:'+k+':'+key);return {ok:true};},
  news_get:async()=>({ok:true,site_url:'https://wiki-pick.com/nouveautes',versions:[{version:'0.4.0',date:'2026-10-13',title:'Test <b>x</b>',items:[{kind:'new',text:'Une chose'},{kind:'fix',text:'Une autre'}]},{version:'0.3.0',date:'2026-10-08',title:'Avant',items:[{kind:'better',text:'Mieux'}]}]}),
+ cards_lock:async(ids,on)=>{window.__calls.push('cards_lock:'+ids.length+':'+on);window.pywebview.api._w('Verrouillage');return {ok:true,ids,locked:on};},
+ cards_tag:async(c,t,p)=>{window.__calls.push('cards_tag:'+c.length+':'+t+':'+p);window.pywebview.api._w('Étiquette');return {ok:true,cids:c,posed:p};},
  corbeille_get:async()=>({ok:true,price:4,minutes:20,items:[{id:801,card:cardOf('fr:D1','Recyclée 1','C'),left:600},{id:802,card:cardOf('fr:D2','Recyclée 2','R'),left:60}]}),
  corbeille_restore:async(ids,all)=>{window.__calls.push('restore:'+JSON.stringify(ids)+':'+all);return {ok:true,restored:all?2:1,cost:all?8:4};},
  corbeille_empty:async()=>{window.__calls.push('empty');return {ok:true,erased:2};},
@@ -432,6 +434,43 @@ with sync_playwright() as p:
     pg.click("[data-tab=collection]"); pg.wait_for_timeout(200)
     pg.locator("#grid .card").first.click(); pg.wait_for_selector("#modal:not(.hidden) .popu"); assert "1 284" in pg.inner_text(".popu").replace("\u202f", " ").replace("\u00a0", " ") and "311 joueurs" in pg.inner_text(".popu")
     pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+
+    # --- raretés officielles, cartes teintées, sélection multiple, exclusives masquées, notifications cliquables, mise en scène des belles cartes
+    assert pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--r-UR').trim()") == "#f6c945", "Exceptionnelle est dorée, comme sur l'appli officielle"
+    pg.click("[data-tab=collection]"); pg.wait_for_timeout(300)
+    assert pg.locator("#grid .card[data-r]").count() > 0 and "gradient" in pg.locator("#grid .card").first.evaluate("e => getComputedStyle(e).backgroundImage"), "carte teintée de sa rareté"
+    pg.evaluate("window.__calls = []")
+    pg.click("#btn-select"); pg.wait_for_selector("#selbar:not(.hidden)")
+    for i in range(3): pg.locator("#grid .card").nth(i).click()
+    assert pg.locator("#grid .card.picked").count() == 3 and "3" in pg.inner_text("#sel-n") and "sélectionnées" in pg.inner_text("#sel-n")
+    pg.click("#sel-tag"); pg.wait_for_selector("#dialog-body .tgc[data-tag]"); pg.locator("#dialog-body .tgc[data-tag]").first.click(); pg.wait_for_timeout(500)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("cards_tag:3:") and c.endswith(":true")], "l'étiquette est posée sur les trois cartes"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.click("#sel-lock"); pg.wait_for_timeout(150)
+    assert not [c for c in pg.evaluate("window.__calls") if c.startswith("cards_lock")], "verrouiller en masse demande une confirmation"
+    pg.click("#sel-lock"); pg.wait_for_timeout(500)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("cards_lock:") and c.endswith(":true")]
+    pg.click("#sel-hide"); pg.wait_for_timeout(500)
+    assert [c for c in pg.evaluate("window.__calls") if c.startswith("hidden_set:") and c.endswith(":true")] and pg.locator("#grid .card.picked").count() == 0
+    pg.click("#sel-end"); assert not pg.is_visible("#selbar")
+    pg.evaluate("S.data.cards.slice(0, 3).forEach((c) => { c.rarity = 'EXC'; }); applyFilters(true)"); pg.wait_for_timeout(300)
+    assert pg.locator("#grid .card[data-r=EXC]").count() >= 1
+    pg.check("#f-hexcl"); pg.wait_for_timeout(300)
+    assert pg.locator("#grid .card[data-r=EXC]").count() == 0 and "pref:hide_exclusive=true" in pg.evaluate("window.__calls"), "les exclusives sont masquées d'un coup, et c'est mémorisé"
+    pg.uncheck("#f-hexcl"); pg.wait_for_timeout(300)
+    pg.evaluate("window.__notifs = [{id:1,type:'outbid',text:'Surenchère <b>x</b>',tone:'bad',link:'auction:31',read:false,created:window.__now},{id:2,type:'x',text:'Sans lien',tone:'',link:'',read:false,created:window.__now}]")
+    pg.click("#btn-bell"); pg.wait_for_selector(".nitem"); pg.wait_for_timeout(300)
+    assert pg.locator(".nitem.link").count() == 1 and pg.locator(".nitem:not(.link)").count() == 1, "seule la notification qui mène quelque part est cliquable"
+    pg.locator(".nitem.link").click(); pg.wait_for_selector("#dialog-body .aucd"); pg.wait_for_timeout(300)
+    assert "auction_get:31" in pg.evaluate("window.__calls") and not pg.is_visible("#bell-panel"), "la notification de surenchère ouvre l'enchère"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.click("[data-tab=packs]"); pg.wait_for_timeout(300); pg.click("#btn-open"); pg.wait_for_selector("#reveal:not(.hidden)", timeout=6000); pg.wait_for_timeout(900)
+    pg.locator(".pcard").first.click(); pg.wait_for_timeout(500)
+    assert pg.locator(".fx").count() == 0, "une carte commune : aucune mise en scène"
+    pg.locator(".pcard").nth(1).click(); pg.wait_for_timeout(400)
+    assert pg.locator(".fx").count() == 1, "une carte Épique ou plus : une mise en scène"
+    pg.wait_for_timeout(1800)
+    pg.click("#btn-done"); pg.wait_for_timeout(300)
 
     # --- marché en direct (lecture seule)
     pg.click("[data-tab=market]"); pg.wait_for_timeout(500)

@@ -13,7 +13,7 @@ import collections
 import threading
 
 from .client import SessionExpired
-from .parse import _card_list, parse_duel
+from .parse import _card_list, clean_link, parse_duel
 
 KEYS = {
     "notify": ("id", "type", "text", "kind", "link"),
@@ -23,6 +23,12 @@ KEYS = {
     "combat": ("what", "id", "nom", "expire"),
     "guild": ("what", "id", "mid", "par"),  # + `de`, `equipe`, `cartes`, `combat` : assainis à part (voir sanitize_combat)
 }
+
+
+def _clean_event(d):
+    if "link" in d:
+        d["link"] = clean_link(d["link"])
+    return d
 
 
 def sanitize_combat(d):
@@ -92,7 +98,7 @@ class LiveStream:
             me = self.my_id()
             if me is None or data.get("to") != me:
                 return
-        self._events.append({"event": event, "data": sanitize_combat(data) if event == "combat" else {k: data[k] for k in keys if k in data}})
+        self._events.append({"event": event, "data": sanitize_combat(data) if event == "combat" else _clean_event({k: data[k] for k in keys if k in data})})
 
     def _log(self, event, data):
         """Journal de diagnostic : le NOM des événements et de leurs champs, jamais les valeurs."""

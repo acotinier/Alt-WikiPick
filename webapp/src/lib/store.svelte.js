@@ -1,6 +1,6 @@
 // État global de l'appli : qui est connecté, son profil, sa collection, les notifications et le temps réel.
 import { auth, call, connectEvents, setExpiredHandler } from './api.js';
-import { debounce } from './format.js';
+import { debounce, EXCLUSIVE } from './format.js';
 import { idbClear, idbGet, idbSet } from './idb.js';
 
 export const app = $state({
@@ -25,7 +25,7 @@ class Collection {
 export const coll = new Collection();
 
 // Ce qui est ouvert par-dessus l'écran courant : la fiche d'une carte, les notifications, le menu du compte.
-export const ui = $state({ card: null, bell: false, menu: false, trade: null, tags: false, haul: null });
+export const ui = $state({ card: null, bell: false, menu: false, trade: null, tags: false, haul: null, auction: null });
 export const openCard = (c) => { ui.card = c; };
 export const openTrade = (to, counterOf = null, note = '') => { ui.trade = { to, counterOf, note }; };
 
@@ -44,13 +44,32 @@ export function setTags(tags) {
   coll.tags = tags;
   if (coll.cards.some((c) => (c.tags || []).some((i) => !ids.has(i)))) coll.cards = coll.cards.map((c) => ((c.tags || []).some((i) => !ids.has(i)) ? { ...c, tags: c.tags.filter((i) => ids.has(i)) } : c));
 }
+// Verrouillage en lot : les numéros d'exemplaires que le serveur a confirmés
+export function setLocks(ids, on) {
+  const s = new Set(ids);
+  coll.cards = coll.cards.map((c) => {
+    if (!(c.ids || []).some((i) => s.has(i))) return c;
+    const locked_ids = on ? [...new Set([...(c.locked_ids || []), ...c.ids.filter((i) => s.has(i))])] : (c.locked_ids || []).filter((i) => !s.has(i));
+    const locked = on ? locked_ids.length >= c.ids.length : false;
+    return { ...c, locked, locked_ids, free_ids: locked || EXCLUSIVE.includes(c.rarity) ? [] : c.ids.filter((i) => !locked_ids.includes(i)) };
+  });
+}
+// Étiquette posée ou retirée sur plusieurs cartes
+export function setTagMany(cids, tagId, pose) {
+  const s = new Set(cids);
+  coll.cards = coll.cards.map((c) => {
+    if (!s.has(c.cid)) return c;
+    const has = (c.tags || []).includes(tagId);
+    return pose && !has ? { ...c, tags: [...(c.tags || []), tagId] } : !pose && has ? { ...c, tags: c.tags.filter((i) => i !== tagId) } : c;
+  });
+}
 export const setCardTags = (cid, tagIds) => { coll.cards = coll.cards.map((c) => (c.cid === cid ? { ...c, tags: tagIds } : c)); };
 
 export const toasts = $state([]);
 let toastId = 0;
-export function toast(msg, kind = 'info', ms = 4500) {
+export function toast(msg, kind = 'info', ms = 4500, link = '') {
   const id = ++toastId;
-  toasts.push({ id, msg, kind });
+  toasts.push({ id, msg, kind, link });
   if (toasts.length > 3) toasts.shift();
   setTimeout(() => { const i = toasts.findIndex((t) => t.id === id); if (i >= 0) toasts.splice(i, 1); }, ms);
 }
@@ -155,7 +174,7 @@ export const collectionChanged = debounce(refreshCollection, 1500); // gagné, v
 function handleEvent({ event, data }) {
   const d = data || {};
   if (event === 'notify') {
-    toast(String(d.text || ''), d.kind === 'good' ? 'good' : d.kind === 'bad' ? 'error' : 'info');
+    toast(String(d.text || ''), d.kind === 'good' ? 'good' : d.kind === 'bad' ? 'error' : 'info', 6000, d.link || '');
     if (['won', 'sold', 'unsold'].includes(d.type)) collectionChanged();
     if (app.me) app.me.unread = (app.me.unread || 0) + 1;
     refreshMeSoon();

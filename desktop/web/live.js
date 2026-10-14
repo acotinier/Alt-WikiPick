@@ -86,7 +86,7 @@ function onNotify(d) {
     link: d.link || "", read: false, created: nowSrv() };
   LV.notifs.unshift(it);
   if (S.data) { S.data.me.unread = (S.data.me.unread || 0) + 1; renderBell(); }
-  if (it.type !== "fin") { toast(it.text, it.tone || "info"); ping(it.tone || "info"); } // « plus que 3 minutes » : la cloche suffit, comme sur le site
+  if (it.type !== "fin") { toast(it.text, it.tone || "info", it.link); ping(it.tone || "info"); } // « plus que 3 minutes » : la cloche suffit, comme sur le site
   if (["won", "sold", "unsold"].includes(it.type)) collectionChanged();
   renderNotifs(); refreshMeSoon(); // le serveur corrige le compteur
 }
@@ -101,9 +101,10 @@ async function loadNotifs() {
   setSkew(r.now); LV.notifs = r.items; renderNotifs();
 }
 function notifNode(n) {
-  return el("div", { class: "nitem" + (n.read ? "" : " unread") + (n.tone ? " " + n.tone : "") },
+  const go = linkKind(n.link) ? () => { closeBell(); followLink(n.link); } : null; // une notification qui mène quelque part est cliquable
+  return el("div", { class: "nitem" + (n.read ? "" : " unread") + (n.tone ? " " + n.tone : "") + (go ? " link" : ""), ...(go ? { role: "button", tabindex: "0", onclick: go, onkeydown: (e) => { if (e.key === "Enter") go(); } } : {}) },
     el("span", { class: "tone" }),
-    el("div", { class: "tx" }, el("div", { text: n.text }), el("small", { text: ago(n.created) })));
+    el("div", { class: "tx" }, el("div", { text: n.text }), el("small", { text: ago(n.created) })), go ? icon("chev") : null);
 }
 function renderNotifs() {
   const all = [...LV.local, ...LV.notifs].sort((a, b) => b.created - a.created);

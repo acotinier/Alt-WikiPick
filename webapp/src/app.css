@@ -19,8 +19,8 @@
   --good: #46c998; --bad: #ff5a68; --warn: #f3b33d;
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --r-C: #9aa3b5; --r-PC: #3fc590; --r-R: #4f8dff; --r-SR: #a672ff; --r-UR: #ff5fb3; --r-L: #f3b33d; --r-M: #ff4e5f;
-  --r-EXC: #3ad7e8; --r-WBC: #3ad7e8; --r-SIXSEVEN: #3ad7e8;
+  --r-C: #aeb6c2; --r-PC: #40bd8f; --r-R: #4aa7e6; --r-SR: #9b5de5; --r-UR: #f6c945; --r-L: #e2852f; --r-M: #ef3f4d;
+  --r-EXC: #f0abfc; --r-WBC: #fbbf24; --r-SIXSEVEN: #ef4444;
   --rad-s: 8px; --rad-m: 12px; --rad-l: 18px; --rad-xl: 24px;
   --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.34, 1.5, .64, 1);
   --hi: inset 0 1px 0 rgba(255, 255, 255, .05);

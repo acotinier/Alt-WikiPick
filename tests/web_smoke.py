@@ -122,6 +122,76 @@ with sync_playwright() as p:
     assert pg.evaluate("[...document.querySelectorAll('.g .card .name')].filter((n) => n.innerText.trim() === 'La Joconde').length") == 1, "réaffichée, la carte revient"
     pg.fill("input[type=search]", ""); pg.wait_for_timeout(300)
 
+    # ---- raretés : noms et couleurs de l'appli officielle, cartes teintées de leur rareté
+    names = pg.evaluate("[...document.querySelectorAll('.chips .chip')].map((c) => c.innerText.trim())")
+    assert set(names) <= {"Mythique", "Légendaire", "Exceptionnelle", "Épique", "Rare", "Inhabituelle", "Commune"} and "Exceptionnelle" in names, names
+    col = lambda r: pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--r-%s').trim()" % r)
+    assert (col("UR"), col("L"), col("PC"), col("SR"), col("R")) == ("#f6c945", "#e2852f", "#40bd8f", "#9b5de5", "#4aa7e6"), "couleurs officielles : Exceptionnelle dorée, Légendaire orange"
+    ur = pg.locator(".g .card[data-r='UR']").first
+    assert "gradient" in ur.evaluate("(e) => getComputedStyle(e).backgroundImage") and ur.locator(".rar").inner_text().strip() == "Exceptionnelle", "la carte est entièrement de la couleur de sa rareté"
+
+    # ---- sélection multiple : étiqueter, verrouiller, masquer en masse
+    pg.evaluate("window.__calls = []")
+    pg.click("[aria-label='Sélectionner des cartes']"); pg.wait_for_selector(".selbar")
+    pg.locator(".g .card").nth(0).click(); pg.locator(".g .card").nth(1).click(); pg.locator(".g .card").nth(2).click(); pg.wait_for_timeout(200)
+    assert "cartes sélectionnées" in pg.inner_text(".selbar") and pg.locator(".selbar b").inner_text() == "3" and pg.locator(".g .card.picked").count() == 3, (pg.inner_text(".selbar"), pg.locator(".g .card.picked").count())
+    pg.click(".selbar >> text=Étiqueter"); pg.wait_for_selector("[role=dialog] .tg")
+    pg.locator("[role=dialog] .tg").first.click(); pg.wait_for_timeout(400)
+    t = calls(pg, "cards_tag")[-1]; assert len(t[1]) == 3 and t[3] is True, "l'étiquette est posée sur les trois cartes"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    lock = pg.locator(".selbar .btn", has_text="Verrouiller").first
+    lock.click(); pg.wait_for_timeout(150); assert not calls(pg, "cards_lock"), "verrouiller en masse demande une confirmation"
+    pg.locator(".selbar .btn.armed").click(); pg.wait_for_timeout(500)
+    lk = calls(pg, "cards_lock")[-1]; assert lk[2] is True and 0 < len(lk[1]) <= 500
+    pg.locator(".selbar .btn", has_text="Masquer").click(); pg.wait_for_timeout(500)
+    hs = calls(pg, "hidden_set")[-1]; assert len(hs[1]) == 3 and hs[2] is True and pg.locator(".g .card.picked").count() == 0
+    pg.click(".selbar >> text=Terminer"); pg.wait_for_timeout(300)
+    assert not pg.is_visible(".selbar")
+    # les cartes masquées se retrouvent, et se réaffichent en masse
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="masquées").locator("input").check(); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    assert pg.locator(".g .card").count() == 3
+    pg.click("[aria-label='Sélectionner des cartes']"); pg.click(".selbar >> text=Toute la liste"); pg.locator(".selbar .btn", has_text="Réafficher").click(); pg.wait_for_timeout(500)
+    assert calls(pg, "hidden_set")[-1][2] is False and pg.locator(".g .card").count() == 0
+    pg.click(".selbar >> text=Terminer")
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="masquées").locator("input").uncheck(); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    assert pg.locator(".g .card").count() > 5
+
+    # ---- masquer d'un coup toutes les cartes exclusives
+    pg.evaluate("window.__mock.cards.slice(0, 3).forEach((c) => { c.rarity = 'EXC'; })"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(800)
+    assert pg.locator(".g .card[data-r='EXC']").count() >= 1
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="exclusives").locator("input").check(); pg.wait_for_timeout(200)
+    assert calls(pg, "prefs_set")[-1][1:] == ["hide_exclusive", True]
+    pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(400)
+    assert pg.locator(".g .card[data-r='EXC']").count() == 0, "les cartes exclusives sont masquées d'un coup"
+    pg.click("button.filt"); pg.locator("[role=dialog] label.check", has_text="exclusives").locator("input").uncheck(); pg.click("[role=dialog] .btn.primary"); pg.wait_for_timeout(300)
+    assert pg.locator(".g .card[data-r='EXC']").count() >= 1
+
+    # ---- notifications cliquables : vers l'enchère, vers les récompenses
+    pg.click(".bell"); pg.wait_for_selector("[role=dialog] .n.link")
+    assert pg.locator("[role=dialog] .n.link").count() == 2 and pg.locator("[role=dialog] .n:not(.link)").count() == 1, "seules les notifications qui mènent quelque part sont cliquables"
+    pg.locator("[role=dialog] .n.link", has_text="surenchéri").click(); pg.wait_for_selector("[role=dialog] .price"); pg.wait_for_timeout(300)
+    assert calls(pg, "auction_get")[-1][1] == 31 and "Se termine dans" in pg.inner_text("[role=dialog]"), "la notification de surenchère ouvre l'enchère"
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    pg.click(".bell"); pg.wait_for_selector("[role=dialog] .n.link"); pg.locator("[role=dialog] .n.link", has_text="remportée").click(); pg.wait_for_timeout(500)
+    assert pg.evaluate("location.hash") == "#/me/rewards", "la notification de récompense mène aux récompenses"
+    pg.evaluate("location.hash = '#/collection'"); pg.wait_for_selector(".g .card")
+
+    # ---- belle carte à l'ouverture d'un paquet : une mise en scène, d'autant plus forte que la rareté est haute
+    pg.evaluate("window.__mock.packs = 3; window.__mock.defi = false"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(600)
+    pg.evaluate("location.hash = '#/packs'"); pg.wait_for_selector(".idle"); pg.click("text=Ouvrir un paquet"); pg.wait_for_selector(".reveal", timeout=8000); pg.wait_for_timeout(900)
+    pg.locator(".pcard").nth(0).click(); pg.wait_for_timeout(500)
+    assert pg.locator(".fx").count() == 0, "une carte commune : aucune mise en scène"
+    pg.locator(".pcard").nth(3).click(); pg.wait_for_timeout(400)
+    assert pg.locator(".fx").count() == 1 and pg.locator(".fx .title").count() == 0 and pg.locator(".fx .rays").count() == 0, "Épique : éclat et étincelles"
+    pg.wait_for_timeout(2200)
+    pg.locator(".pcard").nth(4).click(); pg.wait_for_timeout(400)
+    assert pg.locator(".fx .rays").count() == 1 and "Légendaire" in pg.inner_text(".fx .title") and pg.locator(".fx .ring").count() == 3 and pg.locator(".fx .spark").count() > 30, "Légendaire : rayons, trois ondes, titre"
+    pg.wait_for_timeout(3400)
+    assert pg.locator(".fx").count() == 0, "la mise en scène s'efface seule"
+    pg.click("text=Tout retourner"); pg.wait_for_selector(".end", timeout=15000); pg.click("text=Terminer"); pg.wait_for_selector(".idle")
+    pg.evaluate("window.__mock.packs = 3"); pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(600)
+    pg.evaluate("location.hash = '#/collection'"); pg.wait_for_selector(".g .card")
+
     # ---- aucune injection HTML : un nom de carte reste du texte
     pg.evaluate("window.__mock.cards[1].name = '<img src=x onerror=\"window.__pwn=1\">Piégée'")
     pg.click(".acc"); pg.locator("[role=dialog] button", has_text="Actualiser").click(); pg.wait_for_timeout(900)

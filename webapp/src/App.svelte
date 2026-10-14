@@ -8,6 +8,7 @@
   import { fz } from './lib/fusion.svelte.js';
   import { levelProgress, loadSeason, season, watchActivity } from './lib/season.svelte.js';
   import Haul from './parts/Haul.svelte';
+  import AuctionSheet from './parts/AuctionSheet.svelte';
   import { clock, compact, fmt } from './lib/format.js';
   import { rewardsReady } from './lib/rewards.js';
   import Icon from './ui/Icon.svelte';
@@ -155,6 +156,7 @@
 
   <TagManager />
   <Haul />
+  <AuctionSheet />
 {/if}
 <Toasts />
 

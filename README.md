@@ -94,6 +94,7 @@ Au premier lancement, Windows SmartScreen peut afficher « Windows a protégé v
 | **Paquets** | Ouverture animée, carte par carte, ou **plusieurs paquets d'un coup** (résumé de toutes les cartes à la fin) ; journal de tes paquets et chance mesurée face aux probabilités annoncées. |
 | **Marché** | Les enchères mises à jour en direct, en grille ou en liste. Miser, vendre, suivre tes mises, historique des achats et ventes, **cartes surveillées** avec alerte. |
 | **Échanges** | Proposer, accepter, refuser, contre-proposer, entre amis. |
+| **Raretés officielles** | Les noms et les couleurs de l'appli officielle (l'Exceptionnelle est dorée, la Légendaire orange) et des cartes entièrement teintées de leur rareté. À l'ouverture d'un paquet, une carte **Épique ou mieux** déclenche une mise en scène d'autant plus spectaculaire que la rareté est haute. |
 | **Collection avancée** | Étiquettes (créer, renommer, colorer, poser sur les cartes), cartes **masquées** de ta collection, tri par **date d'obtention** (quelle que soit la source : paquet, échange, achat, fusion), description courte sur les aperçus, images des cartes exclusives, masquer une exclusive de ton profil. |
 | **Fusion** | 2 ou 3 cartes du même rang pour une carte du rang au-dessus. Fusion à la main, ou **lot automatique** (« fusionne 300 cartes communes ») : une fusion à la fois, double confirmation, bouton Arrêter. Règles et chances dans l'icône « ? ». |
 | **Arène** | Combats à deux en direct, decks, Mini-Pack. |

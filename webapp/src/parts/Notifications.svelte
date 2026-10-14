@@ -2,6 +2,8 @@
   import { call } from '../lib/api.js';
   import { ago } from '../lib/format.js';
   import { app, nowSrv, setSkew, ui } from '../lib/store.svelte.js';
+  import { follow, linkKind } from '../lib/notifLink.js';
+  import Icon from '../ui/Icon.svelte';
   import Empty from '../ui/Empty.svelte';
   import Sheet from '../ui/Sheet.svelte';
 
@@ -29,9 +31,15 @@
   {:else}
     <div class="list">
       {#each items as n (n.id || n.created + n.text)}
-        <div class="n" class:unread={!n.read} class:good={n.tone === 'good'} class:bad={n.tone === 'bad'}>
-          <i></i><div><span>{n.text}</span><small class="muted">{ago(n.created, nowSrv())}</small></div>
-        </div>
+        {#if linkKind(n.link)}
+          <button class="n link" class:unread={!n.read} class:good={n.tone === 'good'} class:bad={n.tone === 'bad'} onclick={() => { ui.bell = false; follow(n.link); }}>
+            <i></i><div><span>{n.text}</span><small class="muted">{ago(n.created, nowSrv())}</small></div><Icon name="back" />
+          </button>
+        {:else}
+          <div class="n" class:unread={!n.read} class:good={n.tone === 'good'} class:bad={n.tone === 'bad'}>
+            <i></i><div><span>{n.text}</span><small class="muted">{ago(n.created, nowSrv())}</small></div>
+          </div>
+        {/if}
       {/each}
     </div>
   {/if}
@@ -40,6 +48,7 @@
 
 <style>
   .n { display: flex; gap: 12px; padding: 12px 14px; background: rgba(255, 255, 255, .02); border: 1px solid var(--line); border-radius: var(--rad-m); }
+  button.n { width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; align-items: center; } button.n :global(.i) { margin-left: auto; flex: none; rotate: 180deg; color: var(--faint); } button.n:hover { border-color: var(--line-3); }
   .n i { flex: none; width: 3px; border-radius: 2px; background: transparent; }
   .n.unread i { background: var(--ivory); }
   .n.unread.good i { background: var(--good); }

@@ -162,12 +162,13 @@ function packCard(c, i) {
   return n;
 }
 
-function flipCard(n) {
+function flipCard(n, quiet = false) {
   const c = PK.cards[+n.dataset.i];
   if (n.classList.contains("open")) return openModal(c); // déjà retournée : sa fiche
   n.classList.add("open"); PK.flipped++;
   n.setAttribute("aria-label", c.name);
   if (isTop(c) && !reduced()) setTimeout(() => { burst(n, c.shiny ? 26 : 18); pulse(c); }, 320); // au milieu du retournement
+  if (!quiet) gala(c, n);
   updateProgress();
 }
 
@@ -178,12 +179,39 @@ function flipNext() {
 
 async function flipAll() {
   $("btn-flip-all").disabled = true;
-  for (const n of [...$("pk-cards").children]) {
-    if (!n.classList.contains("open")) { flipCard(n); await sleep(reduced() ? 0 : 260); }
-  }
+  const todo = [...$("pk-cards").children].filter((x) => !x.classList.contains("open"));
+  const best = todo.reduce((b, x) => (!b || rarityRank(PK.cards[+x.dataset.i].rarity) < rarityRank(PK.cards[+b.dataset.i].rarity) ? x : b), null); // seule la plus belle a sa mise en scène
+  for (const n of todo) { flipCard(n, n !== best); await sleep(reduced() ? 0 : 260); }
   $("btn-flip-all").disabled = false;
 }
 
+/* La mise en scène d'une belle carte : plus la rareté est haute (Épique, Exceptionnelle, Légendaire, Mythique), plus c'est démesuré. Tout est en CSS. */
+const FX_TIER = { SR: { c: "#9b5de5", dur: 1.2, flash: 0.35, rings: 1, sparks: 14 }, UR: { c: "#f6c945", dur: 1.7, flash: 0.55, rings: 2, sparks: 24, title: true },
+  L: { c: "#ff9a3c", dur: 2.3, flash: 0.8, rings: 3, sparks: 36, rays: true, title: true }, M: { c: "#f4d27a", dur: 3.2, flash: 1, rings: 4, sparks: 56, rays: true, veil: true, title: true } };
+let fxTimer = 0;
+function gala(c, node) {
+  const t = FX_TIER[c.rarity];
+  if (!t || reduced()) return;
+  node.dataset.rv = c.rarity;
+  document.querySelectorAll(".fx").forEach((x) => x.remove());
+  const fx = el("div", { class: "fx", style: `--c:${t.c};--dur:${t.dur}s;--fl:${t.flash}`, "aria-hidden": "true" });
+  if (t.veil) fx.append(el("i", { class: "fx-veil" }));
+  fx.append(el("i", { class: "fx-flash" }));
+  if (t.rays) fx.append(el("i", { class: "fx-rays" }));
+  for (let i = 0; i < t.rings; i++) fx.append(el("i", { class: "fx-ring", style: `--i:${i}` }));
+  for (let i = 0; i < t.sparks; i++) { // la suite est fixe pour une rareté donnée
+    const k = Math.sin(i * 12.9898 + 4.1414) * 43758.5453, j = k - Math.floor(k);
+    fx.append(el("i", { class: "fx-spark", style: `--a:${Math.round((i * 360) / t.sparks + j * 18)}deg;--d:${Math.round(26 + j * 30)}vmin;--t:${(0.9 + j * 0.7).toFixed(2)}s;--w:${(j * 0.18).toFixed(2)}s` }));
+  }
+  if (t.title) fx.append(el("b", { class: "fx-title", text: label(c.rarity) }));
+  document.body.append(fx);
+  clearTimeout(fxTimer); fxTimer = setTimeout(() => fx.remove(), (t.dur + 0.3) * 1000);
+  if (c.rarity === "L" || c.rarity === "M") { // l'écran tremble
+    const r = $("reveal"), k = c.rarity === "M" ? "fx-shake-m" : "fx-shake-l";
+    r.classList.remove("fx-shake-l", "fx-shake-m"); void r.offsetWidth; r.classList.add(k);
+    setTimeout(() => r.classList.remove(k), c.rarity === "M" ? 950 : 650);
+  }
+}
 function burst(n, count) { // étincelles de la couleur de la rareté
   for (let k = 0; k < count; k++) {
     const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 90;

@@ -24,6 +24,7 @@ async function loadPrefs() {
   if (hasOption(ms, PREFS.market_sort)) { m.sort = PREFS.market_sort; ms.value = m.sort; }
   if (["grid", "dense", "list"].includes(PREFS.market_view)) m.view = PREFS.market_view;
   SND.on = PREFS.sound === true; renderSound();
+  $("f-hexcl").checked = PREFS.hide_exclusive === true;
 }
 
 /* ---------------- son (optionnel) ---------------- */

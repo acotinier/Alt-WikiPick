@@ -14,7 +14,7 @@ from .changelog import news as _news
 from .client import BASE, ApiError, SessionExpired
 from .export import collection_csv
 from .live import LiveStream
-from .parse import (FUSION_RANKS, compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
+from .parse import (FUSION_RANKS, RARITY_NAMES, clean_link, compute_stats, expand_pack_card, parse_auction, parse_card_sheet, parse_chest, parse_collection,
                     parse_combat_info, parse_corbeille, parse_decks, parse_defi, parse_duel, parse_friends, parse_fusion, parse_history,
                     parse_notification, parse_pack_challenge, parse_pro_market, parse_ranking, parse_season, parse_tags, parse_trade, parse_user_cards, parse_users, _safe_img, _to_int)
 from .social import (parse_achievements, parse_claim, parse_conversations, parse_friend_lists, parse_guild, parse_guilds,
@@ -35,7 +35,7 @@ HIDDEN_MAX = 5000  # cartes masquées au plus
 TAG_COLOR = re.compile(r"^#[0-9a-f]{6}$")
 AUCTION_DURATIONS = ("10m", "30m", "1h", "6h", "12h", "24h")  # celles du site
 # Préférences : seules ces clés et ces valeurs sont acceptées (l'interface ne peut rien écrire d'autre)
-PREF_BOOLS = ("sound",)
+PREF_BOOLS = ("sound", "hide_exclusive")
 PREF_CHOICES = {
     "market_view": ("grid", "dense", "list"),
     "market_sort": ("fin", "rarete", "prixbas", "prix", "mises", "lectures", "nom"),
@@ -184,7 +184,7 @@ class Service:
         """Profil + noms de raretés : un seul appel `state`, rapide. Sert aussi au minuteur de paquets."""
         def run():
             state, me = self._state()
-            self._names = (state.get("info") or {}).get("names") or {}
+            self._names = {**((state.get("info") or {}).get("names") or {}), **RARITY_NAMES}
             self._me = safe_me(me, None)
             self._info = safe_info(state.get("info") or {})
             rewards = parse_rewards_state(me)  # quêtes, bienvenue, série de connexion, tchat de guilde : déjà dans `state`
@@ -853,6 +853,28 @@ class Service:
             r = self._client.card_lock(_num(card_id, "Carte"), _cid(cid), bool(shiny), on is True) or {}
             return {"ok": True, "locked": bool(r.get("locked"))}
         return self._write(f"Carte {str(card_id)[:12]} : {'verrouillée' if on is True else 'déverrouillée'}", run)
+
+    def cards_lock(self, ids, on):
+        """Verrouille ou déverrouille plusieurs exemplaires d'un coup (sélection multiple de la collection). Sur clic, une seule action, au plus 500."""
+        def run():
+            sent = _ids(ids, "Cartes", 500)
+            if not sent or len(set(sent)) != len(sent):
+                raise ApiError("Aucune carte à modifier." if not sent else "Cartes en double.")
+            r = self._client.cards_lock(sent, on is True) or {}
+            done = [i for i in (_to_int(x) for x in r.get("ids") or []) if i in set(sent)]
+            return {"ok": True, "ids": done, "locked": on is True}
+        return self._write(f"{'Verrouillage' if on is True else 'Déverrouillage'} de {len(ids) if isinstance(ids, list) else '?'} carte(s)", run)
+
+    def cards_tag(self, cids, tag_id, pose):
+        """Pose ou retire UNE étiquette sur plusieurs cartes d'un coup (au plus 500 articles)."""
+        def run():
+            if not isinstance(cids, list) or not 0 < len(cids) <= 500 or len(set(map(str, cids))) != len(cids):
+                raise ApiError("Aucune carte à étiqueter." if not cids else "Cartes invalides.")
+            clean = [_cid(c) for c in cids]
+            r = self._client.cards_tag(clean, _num(tag_id, "Étiquette"), pose is True) or {}
+            done = [c for c in r.get("cids") or [] if c in set(clean)]
+            return {"ok": True, "cids": done, "posed": pose is True}
+        return self._write(f"Étiquette {'posée' if pose is True else 'retirée'} sur {len(cids) if isinstance(cids, list) else '?'} carte(s)", run)
 
     def card_for_sale(self, card_id, on):
         def run():

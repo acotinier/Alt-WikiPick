@@ -149,7 +149,7 @@ const H = {
     if (kind === 'bienvenue') { const w = S.welcome.filter((x) => x.finished && !x.claimed && (key == null || x.code === key)); w.forEach((x) => (x.claimed = true)); return { ok: true, titles: w.map((x) => x.title), gain: w.reduce((t, x) => t + x.gain, 0), packs: false, gift: false }; }
     return { ok: true, titles: ['10 cartes'], gain: 20, packs: false, gift: false };
   },
-  load_notifications: () => ({ ok: true, now: now(), unread: 2, items: [{ id: 9, type: 'outbid', text: "Quelqu'un a surenchéri sur La Joconde", tone: 'bad', link: '', read: false, created: now() - 40 }, { id: 8, type: 'won', text: 'Enchère remportée : Vincent van Gogh', tone: 'good', link: '', read: false, created: now() - 600 }, { id: 7, type: 'fin', text: 'Plus que 3 minutes sur Mont Blanc', tone: '', link: '', read: true, created: now() - 7200 }] }),
+  load_notifications: () => ({ ok: true, now: now(), unread: 2, items: [{ id: 9, type: 'outbid', text: "Quelqu'un a surenchéri sur La Joconde", tone: 'bad', link: 'auction:31', read: false, created: now() - 40 }, { id: 8, type: 'won', text: 'Enchère remportée : Vincent van Gogh', tone: 'good', link: 'rewards', read: false, created: now() - 600 }, { id: 7, type: 'fin', text: 'Plus que 3 minutes sur Mont Blanc', tone: '', link: '', read: true, created: now() - 7200 }] }),
   read_notifications: () => { S.unread = 0; return { ok: true }; },
   load_market: (scope, page) => {
     if (scope === 'purchases' || scope === 'ventes') return { ok: true, history: true, page, pages: 1, total: 2, sum: 330, now: now(), items: [{ card: card(2, 'SR'), lot: null, price: 250, sold: scope === 'ventes', who: 'Bob', ts: now() - 7200 }, { card: card(6, 'C'), lot: null, price: 80, sold: scope === 'ventes', who: 'Ann', ts: now() - 90000 }] };
@@ -216,6 +216,12 @@ const H = {
   news_get: () => ({ ok: true, site_url: 'https://wiki-pick.com/nouveautes', versions: [
     { version: '0.4.0', date: '2026-10-13', title: 'Season Pass, niveaux et nouveau design', items: [{ kind: 'new', text: 'Season Pass : cinquante niveaux, une récompense par niveau.' }, { kind: 'fix', text: 'Les paquets de 20 cartes s’affichent en grille lisible.' }] },
     { version: '0.3.0', date: '2026-10-08', title: 'Fusion, étiquettes et paquets groupés', items: [{ kind: 'new', text: 'Fusion de cartes, à la main ou en lot.' }, { kind: 'better', text: 'Notifications lues à l’ouverture de la cloche.' }] }] }),
+  cards_lock: (ids, on) => {
+    const s = new Set(ids);
+    S.cards.forEach((c) => { if (!c.ids.some((i) => s.has(i))) return; c.locked_ids = on ? [...new Set([...c.locked_ids, ...c.ids.filter((i) => s.has(i))])] : c.locked_ids.filter((i) => !s.has(i)); c.free_ids = c.ids.filter((i) => !c.locked_ids.includes(i)); c.locked = on && !c.free_ids.length; });
+    return { ok: true, ids: ids.filter((i) => S.cards.some((c) => c.ids.includes(i))), locked: on === true };
+  },
+  cards_tag: (cids, tid, pose) => { S.cards.forEach((c) => { if (cids.includes(c.cid)) c.tags = pose ? [...new Set([...(c.tags || []), tid])] : (c.tags || []).filter((i) => i !== tid); }); return { ok: true, cids, posed: pose === true }; },
   tags_get: () => ({ ok: true, tags: S.tags }),
   tag_save: (id, name, color) => {
     if (!name || !name.trim() || name.length > 20) return { ok: false, error: "Le nom d'une étiquette fait de 1 à 20 caractères." };

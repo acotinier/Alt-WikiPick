@@ -18,6 +18,19 @@ from urllib.parse import quote
 EXCLUSIVE = ("EXC", "WBC", "SIXSEVEN")
 
 # Ordre d'affichage : exclusives d'abord, puis du plus rare au plus commun.
+# Les noms des raretés tels que l'appli officielle les affiche (const RN de core.js) : on ne se fie pas à ceux que renvoie le serveur,
+# les codes internes (PC, SR, UR) datent des premiers noms de rangs.
+RARITY_NAMES = {"C": "Commune", "PC": "Inhabituelle", "R": "Rare", "SR": "Épique", "UR": "Exceptionnelle", "L": "Légendaire", "M": "Mythique",
+                "WBC": "Exclusive", "SIXSEVEN": "Exclusive", "EXC": "Exclusive"}
+
+# Vers où mène une notification (followLink de social.js) : seuls ces types de liens passent, avec un argument court et sans espace.
+_LINK = re.compile(r"^(profile|auction|trades|msg|guild|combat|packs|coll|nouveautes|market|rewards|saison|wbc|support|post)(:[^\s:]{1,60})?$")
+
+
+def clean_link(v):
+    return v if isinstance(v, str) and _LINK.match(v) else ""
+
+
 RARITY_ORDER = ["EXC", "WBC", "SIXSEVEN", "M", "L", "UR", "SR", "R", "PC", "C"]
 
 _ALLOWED_IMG_HOSTS = ("https://upload.wikimedia.org/", "https://thumb.wikimedia.org/")
@@ -512,7 +525,7 @@ def parse_notification(n):
         "type": str(n.get("ntype") or n.get("type") or ""),
         "text": str(n.get("text") or ""),
         "tone": tone if tone in ("good", "bad") else "",
-        "link": str(n.get("link") or ""),
+        "link": clean_link(n.get("link")),
         "read": bool(n.get("read")),
         "created": _to_float(n.get("created")),
     }

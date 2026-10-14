@@ -169,8 +169,18 @@
         <select id="f-tag" aria-label="Filtrer par tag"><option value="">Tous les tags</option></select>
         <label class="check"><input id="f-dups" type="checkbox"> Doublons seulement</label>
         <label class="check"><input id="f-hidden" type="checkbox"> Masquées seulement</label>
+        <label class="check"><input id="f-hexcl" type="checkbox"> Masquer les exclusives</label>
+        <button id="btn-select" class="btn small ghost">Sélectionner</button>
         <button id="btn-tags" class="btn small ghost">Étiquettes</button>
         <span id="f-count" class="count"></span>
+      </div>
+      <div id="selbar" class="selbar hidden" role="toolbar" aria-label="Sélection de cartes">
+        <div class="sel-info"><b id="sel-n"></b><small id="sel-sub"></small></div>
+        <div class="sel-pick"><button id="sel-all" class="link">Toute la liste</button><button id="sel-dups" class="link">Les doublons</button><button id="sel-none" class="link">Aucune</button></div>
+        <div class="sel-acts">
+          <button id="sel-tag" class="btn small">Étiqueter</button><button id="sel-lock" class="btn small">Verrouiller</button><button id="sel-unlock" class="btn small">Déverrouiller</button>
+          <button id="sel-hide" class="btn small">Masquer</button><button id="sel-end" class="btn small primary">Terminer</button>
+        </div>
       </div>
       <div id="f-rarities" class="rarities"></div>
       <div id="grid" class="grid"></div>
@@ -378,6 +388,7 @@
 <script src="tags.js"></script>
 <script src="season.js"></script>
 <script src="news.js"></script>
+<script src="links.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

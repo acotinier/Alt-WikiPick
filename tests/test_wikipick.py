@@ -465,7 +465,7 @@ def test_load_me_exposes_only_game_numbers(tmp_path, monkeypatch):
     a._client.state = lambda: {"me": {"id": 1, "name": "Moi", "email": "e@x.y"}, "info": {**info, "names": {"C": "Commune"}}}
     r = a.load_me()
     assert r["info"] == {"odds": {"M": 0.1, "C": 100}, "bank": {"C": 1, "UR": 25}, "shinyOdds": 0.01, "perPack": 5}
-    assert "email" not in r["me"] and r["names"] == {"C": "Commune"}
+    assert "email" not in r["me"] and r["names"]["C"] == "Commune" and r["names"]["UR"] == "Exceptionnelle"
 
 
 def test_live_forwards_new_auction_of_watched_card_even_when_market_closed():

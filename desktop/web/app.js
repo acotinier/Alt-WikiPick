@@ -42,8 +42,9 @@ const clock = (s) => {
   return h ? `${h} h ${String(m).padStart(2, "0")}` : `${m}:${String(s % 60).padStart(2, "0")}`;
 };
 
-function toast(msg, kind = "error") { // error | info | good
+function toast(msg, kind = "error", link = "") { // error | info | good ; link : où mène un clic sur la notification
   const t = $("toast"); t.textContent = msg; t.className = "toast " + kind;
+  const to = link && typeof linkKind === "function" && linkKind(link) ? link : ""; t.dataset.link = to; if (to) t.classList.add("link");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("hidden"), 5000);
 }
 function busy(text) {
@@ -229,7 +230,8 @@ function applyFilters(keep = false) {
     (!q || c.name.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)) &&
     (!tag || c.tags.map(String).includes(tag)) &&
     (!dups || c.copies > 1) &&
-    HID.set.has(c.cid) === onlyHidden);
+    HID.set.has(c.cid) === onlyHidden &&
+    (onlyHidden || !($("f-hexcl").checked && EXCLUSIVE.includes(c.rarity))));
   // date d'obtention : le dernier exemplaire reçu (les identifiants d'exemplaires croissent avec le temps, quelle que soit la source)
   const last = (c) => (c._last ??= (c.ids || []).reduce((m, i) => (i > m ? i : m), 0));
   const by = {
@@ -244,6 +246,7 @@ function applyFilters(keep = false) {
   $("f-count").textContent = `${fmt(list.length)} carte${list.length > 1 ? "s" : ""}`;
   if (!list.length) grid.append(el("div", { class: "empty", text: "Aucune carte ne correspond." }));
   renderMore(!keep); // une mise à jour en arrière-plan ne rejoue pas l'entrée des cartes
+  if (typeof selPaint === "function") selPaint();
   if (keep) { while (S.shown < Math.min(prev, list.length)) renderMore(); window.scrollTo(0, y); }
 }
 
@@ -255,7 +258,7 @@ function cardNode(c, onclick = () => openModal(c)) {
     pic.style.backgroundImage = `url("${c.img.replace(/"/g, "%22")}")`;
     const probe = new Image(); probe.onerror = () => { pic.style.backgroundImage = ""; initial(); }; probe.src = c.img; // image absente ou refusée : l'initiale
   } else initial();
-  const props = { class: "card" + (isTop(c) ? " top" : "") + (c.shiny ? " sh" : ""), style: `--c:${color(c.rarity)}` };
+  const props = { class: "card" + (isTop(c) ? " top" : "") + (c.shiny ? " sh" : ""), style: `--c:${color(c.rarity)}`, "data-r": String(c.rarity || "C"), "data-cid": String(c.cid || "") };
   if (onclick) Object.assign(props, {
     onclick, tabindex: "0", role: "button",
     onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onclick(e); } },
@@ -276,7 +279,8 @@ function renderMore(enter = false) {
   const grid = $("grid"); const end = Math.min(S.shown + PAGE, S.filtered.length);
   const frag = document.createDocumentFragment();
   for (let i = S.shown; i < end; i++) {
-    const n = cardNode(S.filtered[i]);
+    const cc = S.filtered[i], n = cardNode(cc, S.sel ? (e) => pickCard(cc, e.currentTarget) : undefined);
+    if (S.sel && S.sel.has(cc.cid)) n.classList.add("picked");
     if (enter && i < 24) { n.classList.add("enter"); n.style.setProperty("--k", String(i)); } // les premières cartes arrivent en cascade
     frag.append(n);
   }
@@ -394,7 +398,15 @@ function bind() {
   $("btn-quick2").onclick = () => openQuick();
   bindUser();
   $("btn-tags").onclick = openTagManager;
-  ["f-search", "f-sort", "f-tag", "f-dups", "f-hidden"].forEach((id) => $(id).addEventListener(id === "f-search" ? "input" : "change", () => applyFilters()));
+  $("f-hexcl").addEventListener("change", (e) => savePref("hide_exclusive", e.target.checked));
+  $("toast").addEventListener("click", () => { const l = $("toast").dataset.link; if (l) { $("toast").classList.add("hidden"); followLink(l); } });
+  $("btn-select").onclick = () => (S.sel ? selEnd() : selStart());
+  $("sel-end").onclick = selEnd; $("sel-all").onclick = () => selSet(S.filtered); $("sel-dups").onclick = () => selSet(S.filtered.filter((c) => c.copies > 1)); $("sel-none").onclick = () => selSet([]);
+  $("sel-tag").onclick = selTagPanel;
+  $("sel-lock").onclick = (e) => { if (armed(e.currentTarget, "Confirmer")) selLock(true); };
+  $("sel-unlock").onclick = (e) => { if (armed(e.currentTarget, "Confirmer")) selLock(false); };
+  $("sel-hide").onclick = () => selHide(!$("f-hidden").checked);
+  ["f-search", "f-sort", "f-tag", "f-dups", "f-hidden", "f-hexcl"].forEach((id) => $(id).addEventListener(id === "f-search" ? "input" : "change", () => applyFilters()));
   document.querySelectorAll(".tab").forEach((b) => b.onclick = () => { if (b.dataset.tab === "profile") { PF.name = null; PF.data = null; } setTab(b.dataset.tab); });
   bindPacks(); bindLive(); bindSocial(); bindExtras(); bindActions(); bindCommunity();
   $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) closeModal(); });

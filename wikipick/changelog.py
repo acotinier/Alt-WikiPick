@@ -7,6 +7,14 @@ SITE_NEWS_URL = "https://wiki-pick.com/nouveautes"
 
 # kind : new (nouveau) | better (amélioré) | fix (corrigé)
 CHANGELOG = [
+    {"version": "0.5.0", "date": "2026-10-14", "title": "Raretés officielles, sélection multiple et cartes qui s'illuminent", "items": [
+        ("fix", "Les raretés portent les noms de l'appli officielle (Mythique, Légendaire, Exceptionnelle, Épique, Rare, Inhabituelle, Commune) et leurs couleurs : l'Exceptionnelle est dorée, la Légendaire orange."),
+        ("new", "Les cartes sont entièrement teintées de leur rareté (fond, cadre, bandeau du nom, pied), comme sur l'appli officielle."),
+        ("new", "Les notifications sont cliquables : une surenchère ouvre l'enchère, une récompense ouvre les récompenses, un paquet offert ouvre les paquets, un message ouvre la conversation."),
+        ("new", "Sélection multiple dans la collection : étiqueter, verrouiller, déverrouiller ou masquer plusieurs cartes d'un coup."),
+        ("new", "Masquer d'un coup toutes les cartes exclusives de la collection."),
+        ("new", "À l'ouverture d'un paquet, une carte Épique ou mieux déclenche une mise en scène : plus la rareté est haute, plus elle est spectaculaire."),
+    ]},
     {"version": "0.4.0", "date": "2026-10-13", "title": "Season Pass, niveaux et nouveau design", "items": [
         ("new", "Season Pass : les cinquante niveaux, la récompense choisie en grand, récupérer une récompense, mettre un dos ou un cadre gagné."),
         ("new", "Ton niveau s'affiche autour de ta photo, avec l'anneau de progression."),
